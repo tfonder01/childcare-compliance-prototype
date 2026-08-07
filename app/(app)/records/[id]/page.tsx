@@ -1,0 +1,427 @@
+"use client"
+
+import { use, useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import {
+  ArrowLeft,
+  FileText,
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  Archive,
+  RotateCcw,
+  Send,
+  MapPin,
+  Tag,
+  User,
+  Calendar,
+  RefreshCw,
+} from "lucide-react"
+import { useApp } from "@/lib/store"
+import { LOCATIONS } from "@/lib/mock-data"
+import { StatusBadge } from "@/components/status-badge"
+import { CategoryBadge } from "@/components/category-badge"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
+import type { Comment } from "@/lib/types"
+
+const ACTIVITY_ICONS: Record<string, React.ElementType> = {
+  created: FileText,
+  edited: RefreshCw,
+  status_changed: CheckCircle2,
+  comment_added: Send,
+  file_uploaded: FileText,
+  archived: Archive,
+  restored: RotateCcw,
+}
+
+export default function RecordDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const { records, comments, activity, updateRecordStatus, archiveRecord, restoreRecord, addComment, currentUser, role } =
+    useApp()
+  const router = useRouter()
+
+  const record = records.find((r) => r.id === id)
+  const [commentText, setCommentText] = useState("")
+
+  if (!record) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16">
+        <p className="text-muted-foreground">Record not found.</p>
+        <Link href="/records">
+          <Button variant="outline" size="sm">
+            Back to Records
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  const location = LOCATIONS.find((l) => l.id === record.locationId)
+  const recordComments = comments.filter((c) => c.recordId === id)
+  const recordActivity = activity
+    .filter((a) => a.recordId === id)
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+
+  const handleComment = () => {
+    if (!commentText.trim()) return
+    const comment: Comment = {
+      id: `cmt_${Date.now()}`,
+      recordId: id,
+      user: currentUser.name,
+      userId: currentUser.id,
+      role: currentUser.role,
+      text: commentText.trim(),
+      timestamp: new Date().toISOString(),
+      isUnread: false,
+    }
+    addComment(comment)
+    setCommentText("")
+  }
+
+  const isArchived = record.status === "Archived"
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      {/* Back */}
+      <Link
+        href="/records"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Records
+      </Link>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main content */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Header card */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-semibold text-foreground leading-snug">{record.title}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <StatusBadge status={record.status} />
+                  <CategoryBadge category={record.category} />
+                  {isArchived && (
+                    <span className="text-xs text-muted-foreground italic">
+                      This record is archived. Owners can restore it.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Meta grid */}
+            <dl className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <div>
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  Location
+                </dt>
+                <dd className="mt-1 text-sm text-foreground">
+                  <Link href={`/locations/${record.locationId}`} className="hover:underline hover:text-primary">
+                    {location?.name ?? "—"}
+                  </Link>
+                </dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <User className="h-3 w-3" />
+                  Uploaded By
+                </dt>
+                <dd className="mt-1 text-sm text-foreground">{record.uploadedBy}</dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  Upload Date
+                </dt>
+                <dd className="mt-1 text-sm text-foreground">
+                  {new Date(record.uploadDate).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <RefreshCw className="h-3 w-3" />
+                  Last Updated
+                </dt>
+                <dd className="mt-1 text-sm text-foreground">
+                  {new Date(record.lastUpdated).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </dd>
+              </div>
+              {record.relatedRef && (
+                <div className="col-span-2">
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Tag className="h-3 w-3" />
+                    Related Ref
+                  </dt>
+                  <dd className="mt-1 text-sm text-foreground">{record.relatedRef}</dd>
+                </div>
+              )}
+            </dl>
+
+            {record.description && (
+              <div className="mt-5 rounded-lg bg-muted/40 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</p>
+                <p className="mt-1.5 text-sm text-foreground leading-relaxed">{record.description}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Attached Files */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-foreground">Attached Documents</h2>
+            <div className="mt-3 space-y-2">
+              {record.fileNames.map((name) => (
+                <div
+                  key={name}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3"
+                >
+                  <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+                  <span className="flex-1 text-sm text-foreground">{name}</span>
+                  <button className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <Download className="h-3.5 w-3.5" />
+                    Download
+                  </button>
+                </div>
+              ))}
+            </div>
+            {role === "director" && !isArchived && (
+              <button className="mt-3 flex items-center gap-2 text-xs font-medium text-primary hover:underline">
+                + Upload replacement / additional file
+              </button>
+            )}
+          </div>
+
+          {/* Comments */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-foreground">
+              Comments{" "}
+              <span className="ml-1 text-muted-foreground font-normal">({recordComments.length})</span>
+            </h2>
+
+            {recordComments.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">No comments yet. Start the conversation below.</p>
+            ) : (
+              <div className="mt-4 space-y-4">
+                {recordComments.map((cmt) => (
+                  <div key={cmt.id} className="flex gap-3">
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                        cmt.role === "owner"
+                          ? "bg-violet-100 text-violet-700"
+                          : "bg-teal-100 text-teal-700"
+                      )}
+                    >
+                      {cmt.user
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm font-medium text-foreground">{cmt.user}</span>
+                        <span className="text-[10px] capitalize text-muted-foreground">
+                          {cmt.role}
+                        </span>
+                        <span className="ml-auto text-[11px] text-muted-foreground">
+                          {new Date(cmt.timestamp).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      <div
+                        className={cn(
+                          "mt-1 rounded-lg px-4 py-3 text-sm text-foreground leading-relaxed",
+                          cmt.isUnread ? "bg-blue-50 border border-blue-100" : "bg-muted/40"
+                        )}
+                      >
+                        {cmt.text}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!isArchived && (
+              <div className="mt-4 flex gap-3">
+                <div
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                    role === "owner" ? "bg-violet-100 text-violet-700" : "bg-teal-100 text-teal-700"
+                  )}
+                >
+                  {currentUser.initials}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Textarea
+                    placeholder="Add a comment or follow-up note..."
+                    rows={2}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                        e.preventDefault()
+                        handleComment()
+                      }
+                    }}
+                    className="text-sm resize-none"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleComment}
+                    disabled={!commentText.trim()}
+                    className="gap-1.5"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    Send
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar: Actions + Activity */}
+        <div className="space-y-4">
+          {/* Actions */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-foreground">Actions</h2>
+            <div className="mt-3 space-y-2">
+              {role === "owner" && !isArchived && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                    onClick={() => updateRecordStatus(id, "Reviewed")}
+                    disabled={record.status === "Reviewed"}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Mark Reviewed
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-amber-700 border-amber-200 hover:bg-amber-50"
+                    onClick={() => updateRecordStatus(id, "Needs Attention")}
+                    disabled={record.status === "Needs Attention"}
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    Mark Needs Attention
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-muted-foreground"
+                    onClick={() => {
+                      archiveRecord(id)
+                      router.push("/archived")
+                    }}
+                  >
+                    <Archive className="h-4 w-4" />
+                    Archive Record
+                  </Button>
+                </>
+              )}
+
+              {role === "owner" && isArchived && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start gap-2 text-primary"
+                  onClick={() => {
+                    restoreRecord(id)
+                  }}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Restore Record
+                </Button>
+              )}
+
+              {role === "director" && !isArchived && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-2"
+                    onClick={() => {}}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Edit Record
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-muted-foreground"
+                    onClick={() => archiveRecord(id)}
+                  >
+                    <Archive className="h-4 w-4" />
+                    Archive Record
+                  </Button>
+                </>
+              )}
+
+              {role === "director" && isArchived && (
+                <p className="text-xs text-muted-foreground rounded-lg bg-muted/40 p-3">
+                  This record is archived. Only an Owner / Admin can restore it.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Activity Timeline */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-foreground">Activity</h2>
+            <div className="mt-4 space-y-4">
+              {recordActivity.map((evt, i) => {
+                const Icon = ACTIVITY_ICONS[evt.type] ?? FileText
+                return (
+                  <div key={evt.id} className="relative flex gap-3">
+                    {i < recordActivity.length - 1 && (
+                      <div className="absolute left-3.5 top-7 h-full w-px bg-border" />
+                    )}
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card z-10">
+                      <Icon className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 pb-1">
+                      <p className="text-xs font-medium text-foreground leading-snug">{evt.detail}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {evt.user} &middot;{" "}
+                        {new Date(evt.timestamp).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+              {recordActivity.length === 0 && (
+                <p className="text-xs text-muted-foreground">No activity yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

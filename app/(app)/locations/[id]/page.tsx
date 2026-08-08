@@ -32,9 +32,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
     return (
       <div className="flex flex-col items-center gap-4 py-16">
         <p className="text-muted-foreground">Location not found.</p>
-        <Link href="/locations">
-          <Button variant="outline" size="sm">Back to Locations</Button>
-        </Link>
+        <Button render={<Link href="/locations" />} variant="outline" size="sm">Back to Locations</Button>
       </div>
     )
   }
@@ -67,14 +65,14 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
       <div className="mx-auto max-w-5xl space-y-6">
         <Link
           href="/locations"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Locations
         </Link>
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
           <div className="flex items-start gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <MapPin className="h-5 w-5 text-primary" />
@@ -82,7 +80,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
             <div>
               <h1 className="text-xl font-bold text-foreground">{location.name}</h1>
               <p className="text-sm text-muted-foreground">Director: {location.director}</p>
-              <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span>{location.address}</span>
                 <span className="flex items-center gap-1">
                   <Phone className="h-3 w-3" />
@@ -91,7 +89,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
           </div>
-          <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setUploadOpen(true)}>
+          <Button size="sm" className="w-full gap-1.5 sm:w-auto sm:shrink-0" onClick={() => setUploadOpen(true)}>
             <Upload className="h-3.5 w-3.5" />
             Upload Record
           </Button>
@@ -105,7 +103,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
             { label: "Needs Attention", value: attentionCount, className: "bg-amber-50" },
             { label: "Reviewed", value: reviewedCount, className: "bg-emerald-50" },
           ].map(({ label, value, className }) => (
-            <div key={label} className={`rounded-xl border border-border p-4 shadow-sm ${className}`}>
+            <div key={label} className={`rounded-xl border border-border p-4 shadow-sm transition-colors duration-200 ${className}`}>
               <p className="text-2xl font-bold text-foreground">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>
             </div>
@@ -116,7 +114,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
           <div className="space-y-5 lg:col-span-2">
             {/* Needs Attention */}
             {attentionRecords.length > 0 && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/50 shadow-sm">
+              <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50/45 shadow-sm ring-1 ring-amber-100/60">
                 <div className="flex items-center gap-2 border-b border-amber-200 px-5 py-3.5">
                   <AlertCircle className="h-4 w-4 text-amber-600" />
                   <h2 className="text-sm font-semibold text-amber-800">
@@ -128,7 +126,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
                     <Link
                       key={rec.id}
                       href={`/records/${rec.id}`}
-                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-amber-100/50"
+                      className="flex items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-amber-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400/40"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-sm font-medium text-foreground">{rec.title}</p>
@@ -142,12 +140,12 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
             )}
 
             {/* Recent Records */}
-            <div className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
               <div className="flex items-center justify-between border-b border-border px-5 py-4">
                 <h2 className="text-sm font-semibold text-foreground">Recent Records</h2>
                 <Link
                   href={`/records?location=${id}`}
-                  className="text-xs font-medium text-primary hover:underline"
+                    className="rounded-sm text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   View all
                 </Link>
@@ -162,7 +160,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
                     <Link
                       key={rec.id}
                       href={`/records/${rec.id}`}
-                      className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-muted/40"
+                      className="interactive-row flex items-start gap-3 px-5 py-3.5"
                     >
                       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />

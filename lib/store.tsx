@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from "react"
 import type { ComplianceRecord, Comment, ActivityEvent, Notification, Role } from "./types"
+import { ToastViewport, type ToastMessage } from "@/components/toast-viewport"
 import {
   RECORDS as INITIAL_RECORDS,
   COMMENTS as INITIAL_COMMENTS,
@@ -26,6 +27,7 @@ interface AppState {
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
   unreadCount: number
+  showToast: (message: string) => void
 }
 
 const AppContext = createContext<AppState | null>(null)
@@ -36,10 +38,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS)
   const [activity, setActivity] = useState<ActivityEvent[]>(INITIAL_ACTIVITY)
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS)
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const currentUser = role === "owner" ? USERS[0] : USERS[1]
 
   const setRole = useCallback((r: Role) => setRoleState(r), [])
+
+  const showToast = useCallback((message: string) => {
+    const id = Date.now() + Math.random()
+    setToasts((prev) => [...prev, { id, message }])
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    }, 3200)
+  }, [])
 
   const addActivityEvent = useCallback(
     (event: Omit<ActivityEvent, "id">) => {
@@ -70,8 +81,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           detail: `Status changed to ${status}.`,
         })
       }
+      showToast(status === "Reviewed" ? "Record marked Reviewed" : "Record marked Needs Attention")
     },
-    [records, currentUser, addActivityEvent]
+    [records, currentUser, addActivityEvent, showToast]
   )
 
   const archiveRecord = useCallback(
@@ -90,8 +102,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         detail: "Record archived.",
       })
+      showToast("Record archived")
     },
-    [currentUser, addActivityEvent]
+    [currentUser, addActivityEvent, showToast]
   )
 
   const restoreRecord = useCallback(
@@ -110,8 +123,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         detail: "Record restored from archive.",
       })
+      showToast("Record restored")
     },
-    [currentUser, addActivityEvent]
+    [currentUser, addActivityEvent, showToast]
   )
 
   const addRecord = useCallback(
@@ -138,8 +152,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         },
         ...prev,
       ])
+      showToast("Record uploaded")
     },
-    [currentUser, addActivityEvent]
+    [currentUser, addActivityEvent, showToast]
   )
 
   const addComment = useCallback(
@@ -154,8 +169,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         detail: "Comment added.",
       })
+      showToast("Comment added")
     },
-    [currentUser, addActivityEvent]
+    [currentUser, addActivityEvent, showToast]
   )
 
   const markNotificationRead = useCallback((id: string) => {
@@ -186,9 +202,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         markNotificationRead,
         markAllNotificationsRead,
         unreadCount,
+        showToast,
       }}
     >
       {children}
+      <ToastViewport
+        toasts={toasts}
+        onDismiss={(id) => setToasts((prev) => prev.filter((toast) => toast.id !== id))}
+      />
     </AppContext.Provider>
   )
 }

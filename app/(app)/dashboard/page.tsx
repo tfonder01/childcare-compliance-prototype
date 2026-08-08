@@ -43,15 +43,15 @@ function StatCard({
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+      className="interactive-card group flex min-h-32 flex-col gap-3 rounded-xl border bg-card p-5"
     >
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconClassName}`}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-current/10 ${iconClassName}`}>
           <Icon className="h-4.5 w-4.5" />
         </div>
       </div>
-      <p className="text-3xl font-bold tracking-tight text-foreground">{value}</p>
+      <p className="mt-auto text-3xl font-bold tracking-tight text-foreground tabular-nums">{value}</p>
     </Link>
   )
 }
@@ -141,12 +141,12 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Uploads */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">Recent Uploads</h2>
               <Link
                 href="/records"
-                className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="arrow-link flex items-center gap-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 View all <ArrowRight className="h-3 w-3" />
               </Link>
@@ -158,7 +158,7 @@ export default function DashboardPage() {
                   <Link
                     key={rec.id}
                     href={`/records/${rec.id}`}
-                    className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-muted/40"
+                    className="interactive-row flex items-start gap-3 px-5 py-3.5"
                   >
                     <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
@@ -183,12 +183,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Needs Review Queue */}
-          <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">Needs Review</h2>
               <Link
                 href="/needs-review"
-                className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="arrow-link flex items-center gap-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 View all <ArrowRight className="h-3 w-3" />
               </Link>
@@ -209,7 +209,7 @@ export default function DashboardPage() {
                     <Link
                       key={rec.id}
                       href={`/records/${rec.id}`}
-                      className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-muted/40"
+                      className="interactive-row flex items-start gap-3 px-5 py-3.5"
                     >
                       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-50">
                         <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
@@ -237,19 +237,19 @@ export default function DashboardPage() {
         {/* Right column */}
         <div className="space-y-4">
           {/* Recent Activity */}
-          <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">Recent Activity</h2>
               <Link
                 href="/activity"
-                className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="arrow-link flex items-center gap-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 View all <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             <div className="divide-y divide-border">
               {recentActivity.map((evt) => (
-                <div key={evt.id} className="px-5 py-3">
+                <div key={evt.id} className="px-5 py-3 transition-colors duration-150 hover:bg-muted/30">
                   <p className="text-xs font-medium text-foreground leading-snug">{evt.detail}</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {evt.user} &middot;{" "}
@@ -266,7 +266,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Records by Location */}
-          <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">By Location</h2>
             </div>
@@ -275,7 +275,7 @@ export default function DashboardPage() {
                 <Link
                   key={loc.id}
                   href={`/locations/${loc.id}`}
-                  className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
+                  className="interactive-row flex items-center gap-3 px-5 py-3"
                 >
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
@@ -309,7 +309,7 @@ export default function DashboardPage() {
                 <Link
                   key={category}
                   href={`/records?category=${encodeURIComponent(category)}`}
-                  className="flex items-center justify-between gap-2 hover:opacity-80"
+                  className="interactive-row -mx-2 flex items-center justify-between gap-2 rounded-md px-2 py-1"
                 >
                   <CategoryBadge category={category} className="text-[11px]" />
                   <span className="text-xs font-medium text-muted-foreground">{count}</span>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
 
           {/* Audit Placeholder */}
           {role === "owner" && (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5">
+            <div className="mt-7 rounded-xl border border-dashed border-border/80 bg-muted/15 p-5 opacity-80">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 Coming Soon
               </p>

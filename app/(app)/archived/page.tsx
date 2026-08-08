@@ -6,9 +6,19 @@ import { useApp } from "@/lib/store"
 import { LOCATIONS } from "@/lib/mock-data"
 import { CategoryBadge } from "@/components/category-badge"
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
 
 export default function ArchivedPage() {
   const { records, activity, restoreRecord, role } = useApp()
+  const [restoringId, setRestoringId] = useState<string | null>(null)
+
+  const handleRestore = (recordId: string) => {
+    setRestoringId(recordId)
+    window.setTimeout(() => {
+      restoreRecord(recordId)
+      setRestoringId(null)
+    }, 160)
+  }
 
   const archived = records.filter((r) => r.status === "Archived")
 
@@ -21,7 +31,7 @@ export default function ArchivedPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+      <div className="rounded-lg border border-border bg-muted/25 px-4 py-3 text-sm text-muted-foreground">
         <strong className="text-foreground">Archive</strong> — Records are never permanently deleted. Owners and admins can
         restore archived records at any time.
       </div>
@@ -70,7 +80,11 @@ export default function ArchivedPage() {
                   const location = LOCATIONS.find((l) => l.id === rec.locationId)
                   const archiveEvent = getArchiveEvent(rec.id)
                   return (
-                    <tr key={rec.id} className="opacity-80 hover:opacity-100 hover:bg-muted/40">
+                    <tr
+                      key={rec.id}
+                      className="opacity-75 transition-[opacity,background-color] duration-150 hover:bg-muted/50 hover:opacity-100 data-[restoring=true]:opacity-0"
+                      data-restoring={restoringId === rec.id}
+                    >
                       <td className="px-4 py-3.5">
                         <p className="font-medium text-foreground max-w-[220px] truncate">{rec.title}</p>
                         <p className="text-xs text-muted-foreground">{rec.uploadedBy}</p>
@@ -104,17 +118,23 @@ export default function ArchivedPage() {
                               variant="ghost"
                               size="sm"
                               className="h-7 gap-1 text-xs text-primary hover:bg-primary/10"
-                              onClick={() => restoreRecord(rec.id)}
+                              onClick={() => handleRestore(rec.id)}
+                              disabled={restoringId === rec.id}
                             >
                               <RotateCcw className="h-3.5 w-3.5" />
                               Restore
                             </Button>
                           )}
-                          <Link href={`/records/${rec.id}`}>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <Button
+                            render={<Link href={`/records/${rec.id}`} />}
+                            nativeButton={false}
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            aria-label={`Open ${rec.title}`}
+                          >
                               <ExternalLink className="h-3.5 w-3.5" />
-                            </Button>
-                          </Link>
+                          </Button>
                         </div>
                       </td>
                     </tr>

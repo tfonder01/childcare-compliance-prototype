@@ -99,8 +99,8 @@ export function UploadModal({ open, onClose, defaultLocationId }: UploadModalPro
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg">
         {submitted ? (
-          <div className="flex flex-col items-center gap-4 py-8 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
+          <div className="flex flex-col items-center gap-4 py-8 text-center [animation:page-enter_200ms_ease-out_both]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-100">
               <CheckCircle2 className="h-7 w-7 text-emerald-600" />
             </div>
             <div>
@@ -120,13 +120,13 @@ export function UploadModal({ open, onClose, defaultLocationId }: UploadModalPro
               <DialogTitle>Upload Compliance Record</DialogTitle>
             </DialogHeader>
 
-            <div className="grid gap-4 py-2">
+            <div className="grid gap-5 py-2">
               {/* Location */}
               <div className="grid gap-1.5">
                 <Label>Location *</Label>
                 <Select
                   value={form.locationId}
-                  onValueChange={(v) => setForm((f) => ({ ...f, locationId: v }))}
+                  onValueChange={(v) => setForm((f) => ({ ...f, locationId: v ?? "" }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select location" />
@@ -146,7 +146,7 @@ export function UploadModal({ open, onClose, defaultLocationId }: UploadModalPro
                 <Label>Compliance Category *</Label>
                 <Select
                   value={form.category}
-                  onValueChange={(v) => setForm((f) => ({ ...f, category: v as ComplianceCategory }))}
+                  onValueChange={(v) => setForm((f) => ({ ...f, category: (v ?? "") as ComplianceCategory | "" }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -195,21 +195,23 @@ export function UploadModal({ open, onClose, defaultLocationId }: UploadModalPro
               {/* File Upload Area */}
               <div className="grid gap-1.5">
                 <Label>Document / Photo</Label>
-                <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-6 text-center transition-colors hover:border-primary/40 hover:bg-muted/60">
-                  <Upload className="h-6 w-6 text-muted-foreground" />
+                <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/25 px-4 py-6 text-center transition-[border-color,background-color,box-shadow] duration-150 hover:border-primary/40 hover:bg-primary/[0.03] focus-within:border-primary/50 focus-within:ring-3 focus-within:ring-ring/30">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-card ring-1 ring-border">
+                    <Upload className="h-5 w-5 text-primary" />
+                  </span>
                   <span className="text-sm text-muted-foreground">
                     Drag & drop or click to select files
                   </span>
                   <span className="text-xs text-muted-foreground">PDF, JPG, PNG up to 20MB</span>
                   <input
-                    type="text"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                     className="sr-only"
-                    placeholder="file"
-                    onChange={(e) => setForm((f) => ({ ...f, fileName: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, fileName: e.target.files?.[0]?.name ?? "" }))}
                   />
                 </label>
                 {form.fileName && (
-                  <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm">
+                  <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm [animation:page-enter_180ms_ease-out_both]">
                     <File className="h-4 w-4 text-muted-foreground" />
                     <span className="text-foreground">{form.fileName}</span>
                   </div>
@@ -231,7 +233,7 @@ export function UploadModal({ open, onClose, defaultLocationId }: UploadModalPro
               <Button variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={!canSubmit}>
+              <Button onClick={handleSubmit} disabled={!canSubmit} className="min-w-28">
                 Upload Record
               </Button>
             </DialogFooter>

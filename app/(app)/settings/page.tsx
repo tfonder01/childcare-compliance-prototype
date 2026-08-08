@@ -6,10 +6,10 @@ import { LOCATIONS, USERS } from "@/lib/mock-data"
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+    <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <h2 className="border-b border-border pb-3 text-sm font-semibold text-foreground">{title}</h2>
       <div className="mt-4">{children}</div>
-    </div>
+    </section>
   )
 }
 
@@ -17,7 +17,7 @@ export default function SettingsPage() {
   const { role, currentUser } = useApp()
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="mx-auto max-w-3xl space-y-6">
       {/* Profile */}
       <Section title="Your Profile">
         <div className="flex items-center gap-4">
@@ -47,7 +47,7 @@ export default function SettingsPage() {
             {LOCATIONS.map((loc) => (
               <div
                 key={loc.id}
-                className="flex items-center gap-3 rounded-lg border border-border p-3"
+                className="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted/15 p-3 sm:flex-row sm:items-center"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
                   <MapPin className="h-4 w-4 text-primary" />
@@ -58,7 +58,7 @@ export default function SettingsPage() {
                     Director: {loc.director} &middot; Capacity: {loc.capacity}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground">{loc.phone}</p>
+                <p className="text-xs text-muted-foreground sm:text-right">{loc.phone}</p>
               </div>
             ))}
           </div>
@@ -75,7 +75,7 @@ export default function SettingsPage() {
             {USERS.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center gap-3 rounded-lg border border-border p-3"
+                className="flex items-center gap-3 rounded-lg border border-border bg-muted/15 p-3"
               >
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
@@ -122,7 +122,7 @@ export default function SettingsPage() {
             { label: "Director adds a comment", description: "Notify when a comment is added to a record" },
             { label: "Record reviewed", description: "Notify when a record is marked reviewed" },
           ].map(({ label, description }) => (
-            <div key={label} className="flex items-start justify-between gap-4">
+            <div key={label} className="flex items-start justify-between gap-4 rounded-lg px-2 py-2">
               <div>
                 <p className="text-sm font-medium text-foreground">{label}</p>
                 <p className="text-xs text-muted-foreground">{description}</p>
@@ -164,12 +164,12 @@ export default function SettingsPage() {
       </Section>
 
       {/* Coming Soon */}
-      <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5">
+      <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 opacity-85">
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-muted-foreground" />
           <p className="text-sm font-semibold text-muted-foreground">Coming Soon</p>
         </div>
-        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+        <ul className="mt-3 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
           <li>• Full user management (invite, deactivate, role assignment)</li>
           <li>• Email and push notification configuration</li>
           <li>• Audit log export (CSV, PDF)</li>

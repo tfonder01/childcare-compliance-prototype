@@ -42,17 +42,23 @@ export default function ActivityPage() {
   })
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
+      {sorted.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
+          <p className="text-sm font-medium text-foreground">No recent activity</p>
+          <p className="mt-1 text-xs text-muted-foreground">Record changes and comments will appear here.</p>
+        </div>
+      )}
       {Object.entries(grouped).map(([date, events]) => (
-        <div key={date}>
-          <div className="mb-3 flex items-center gap-3">
+        <section key={date} className="rounded-xl border border-border bg-card px-5 py-4 shadow-sm sm:px-6">
+          <div className="mb-4 flex items-center gap-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {fmtDate(date)}
             </p>
             <div className="flex-1 border-t border-border" />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {events.map((evt, i) => {
               const config = EVENT_CONFIG[evt.type] ?? EVENT_CONFIG.created
               const Icon = config.icon
@@ -63,20 +69,20 @@ export default function ActivityPage() {
               const isLast = i === events.length - 1
 
               return (
-                <div key={evt.id} className="relative flex gap-4">
+                <div key={evt.id} className="interactive-row relative -mx-2 flex gap-4 rounded-lg px-2 pt-1">
                   {!isLast && (
-                    <div className="absolute left-4 top-9 h-full w-px bg-border" />
+                    <div className="absolute left-6 top-9 h-full w-px bg-border" />
                   )}
                   <div
                     className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-full z-10",
+                      "z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-card",
                       config.iconClass
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
                   </div>
                   <div className="flex-1 pb-4">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col items-start justify-between gap-2 sm:flex-row">
                       <div>
                         <p className="text-sm font-medium text-foreground leading-snug">
                           {evt.detail}
@@ -84,7 +90,7 @@ export default function ActivityPage() {
                         {record && (
                           <Link
                             href={`/records/${record.id}`}
-                            className="mt-0.5 text-xs text-primary hover:underline"
+                            className="rounded-sm text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             {record.title}
                           </Link>
@@ -93,7 +99,7 @@ export default function ActivityPage() {
                           <p className="text-[11px] text-muted-foreground">{location.name}</p>
                         )}
                       </div>
-                      <div className="text-right shrink-0">
+                      <div className="flex shrink-0 items-center gap-1.5 text-left sm:block sm:text-right">
                         <p className="text-xs font-medium text-foreground">{evt.user}</p>
                         <p className="text-[11px] capitalize text-muted-foreground">{evt.role}</p>
                         <p className="text-[11px] text-muted-foreground">
@@ -106,7 +112,7 @@ export default function ActivityPage() {
               )
             })}
           </div>
-        </div>
+        </section>
       ))}
     </div>
   )

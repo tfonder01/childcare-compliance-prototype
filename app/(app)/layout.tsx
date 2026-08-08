@@ -31,7 +31,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
         <Topbar onMenuClick={() => setSidebarOpen((o) => !o)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="page-enter">{children}</div>
+        </main>
       </div>
     </div>
   )

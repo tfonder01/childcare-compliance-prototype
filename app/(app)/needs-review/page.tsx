@@ -11,6 +11,18 @@ import { useState, useEffect } from "react"
 
 export default function NeedsReviewPage() {
   const { records, updateRecordStatus, role } = useApp()
+  const [now, setNow] = useState<number | null>(null)
+  const [resolvingId, setResolvingId] = useState<string | null>(null)
+
+  useEffect(() => setNow(Date.now()), [])
+
+  const markReviewed = (recordId: string) => {
+    setResolvingId(recordId)
+    window.setTimeout(() => {
+      updateRecordStatus(recordId, "Reviewed")
+      setResolvingId(null)
+    }, 160)
+  }
 
   const queue = records
     .filter((r) => r.status === "New" || r.status === "Needs Attention")
@@ -26,12 +38,12 @@ export default function NeedsReviewPage() {
   return (
     <div className="space-y-5">
       {/* Summary */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+      <div className="flex flex-wrap gap-3 rounded-xl border border-border bg-card p-3 shadow-sm">
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <span className="text-sm font-medium text-amber-800">{attentionCount} Needs Attention</span>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5">
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 shadow-sm">
           <span className="h-2 w-2 rounded-full bg-blue-500" />
           <span className="text-sm font-medium text-blue-800">{newCount} New Uploads</span>
         </div>
@@ -92,10 +104,14 @@ export default function NeedsReviewPage() {
                 {queue.map((rec) => {
                   const location = LOCATIONS.find((l) => l.id === rec.locationId)
                   const daysAgo = Math.floor(
-                    (Date.now() - new Date(rec.uploadDate).getTime()) / 86400000
+                    ((now ?? new Date(rec.uploadDate).getTime()) - new Date(rec.uploadDate).getTime()) / 86400000
                   )
                   return (
-                    <tr key={rec.id} className="hover:bg-muted/40">
+                    <tr
+                      key={rec.id}
+                      className="transition-[opacity,background-color] duration-150 hover:bg-muted/50 data-[resolving=true]:opacity-0"
+                      data-resolving={resolvingId === rec.id}
+                    >
                       <td className="px-4 py-3.5">
                         <p className="font-medium text-foreground leading-snug max-w-[220px] truncate">
                           {rec.title}
@@ -127,7 +143,8 @@ export default function NeedsReviewPage() {
                               variant="ghost"
                               size="sm"
                               className="h-7 gap-1 text-xs text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                              onClick={() => updateRecordStatus(rec.id, "Reviewed")}
+                              onClick={() => markReviewed(rec.id)}
+                              disabled={resolvingId === rec.id}
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               Reviewed
@@ -142,11 +159,16 @@ export default function NeedsReviewPage() {
                               <AlertCircle className="h-3.5 w-3.5" />
                               Attention
                             </Button>
-                            <Link href={`/records/${rec.id}`}>
-                              <Button variant="ghost" size="icon" className="h-7 w-7">
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </Button>
-                            </Link>
+                          <Button
+                            render={<Link href={`/records/${rec.id}`} />}
+                            nativeButton={false}
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            aria-label={`Open ${rec.title}`}
+                          >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
                           </div>
                         </td>
                       )}

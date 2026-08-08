@@ -35,7 +35,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   ).length
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-[oklch(0.32_0.02_240)] bg-[oklch(0.22_0.02_240)]">
+    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-[oklch(0.32_0.02_240)] bg-[oklch(0.22_0.02_240)] shadow-xl shadow-slate-950/10">
       {/* Logo */}
       <div className="flex items-center gap-2.5 border-b border-[oklch(0.32_0.02_240)] px-5 py-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[oklch(0.42_0.13_240)]">
@@ -48,7 +48,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         {onClose && (
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[oklch(0.65_0.02_240)] hover:bg-[oklch(0.30_0.025_240)] hover:text-white lg:hidden"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[oklch(0.65_0.02_240)] transition-colors duration-150 hover:bg-[oklch(0.30_0.025_240)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring lg:hidden"
             aria-label="Close menu"
           >
             <X className="h-4 w-4" />
@@ -69,13 +69,13 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                   href={href}
                   onClick={onClose}
                   className={cn(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-[color,background-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                     isActive
-                      ? "bg-[oklch(0.42_0.13_240)] text-white"
+                      ? "bg-[oklch(0.42_0.13_240)] text-white before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-cyan-300"
                       : "text-[oklch(0.72_0.02_240)] hover:bg-[oklch(0.30_0.025_240)] hover:text-[oklch(0.95_0.01_240)]"
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className={cn("h-4 w-4 shrink-0 transition-[opacity,transform] duration-150", isActive ? "opacity-100" : "opacity-75 group-hover:translate-x-px group-hover:opacity-100")} />
                   <span className="flex-1">{label}</span>
                   {badge ? (
                     <span
@@ -98,7 +98,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* User footer */}
       <div className="border-t border-[oklch(0.32_0.02_240)] p-3">
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+        <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.035] px-3 py-2.5 shadow-inner shadow-black/5">
           <div
             className={cn(
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold",

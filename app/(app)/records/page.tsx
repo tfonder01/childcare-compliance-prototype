@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { Suspense, useState, useMemo } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Search, FileText, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
@@ -42,7 +42,7 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
   )
 }
 
-export default function RecordsPage() {
+function RecordsContent() {
   const { records, role } = useApp()
   const searchParams = useSearchParams()
 
@@ -128,8 +128,8 @@ export default function RecordsPage() {
           />
         </div>
 
-        <Select value={locationFilter} onValueChange={setLocationFilter}>
-          <SelectTrigger className="h-9 w-[180px] text-sm">
+        <Select value={locationFilter} onValueChange={(value) => setLocationFilter(value ?? "all")}>
+          <SelectTrigger className="h-9 w-full text-sm sm:w-[180px]">
             <SelectValue>
               {locationFilter === "all"
                 ? "All Locations"
@@ -146,8 +146,8 @@ export default function RecordsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="h-9 w-[190px] text-sm">
+        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value ?? "all")}>
+          <SelectTrigger className="h-9 w-full text-sm sm:w-[190px]">
             <SelectValue>
               {categoryFilter === "all" ? "All Categories" : categoryFilter}
             </SelectValue>
@@ -162,8 +162,8 @@ export default function RecordsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-9 w-[160px] text-sm">
+        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? "all")}>
+          <SelectTrigger className="h-9 w-full text-sm sm:w-[160px]">
             <SelectValue>
               {statusFilter === "all" ? "All Statuses" : statusFilter}
             </SelectValue>
@@ -210,7 +210,7 @@ export default function RecordsPage() {
                   return (
                     <tr
                       key={rec.id}
-                      className="group cursor-pointer transition-colors hover:bg-muted/40"
+                      className="group cursor-pointer transition-colors duration-150 hover:bg-muted/50 focus-within:bg-muted/50"
                     >
                       <td className="px-4 py-3.5">
                         <Link href={`/records/${rec.id}`} className="flex items-center gap-3">
@@ -267,5 +267,20 @@ export default function RecordsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RecordsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4" aria-label="Loading records">
+          <div className="h-9 w-full max-w-xl animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
+          <div className="h-96 animate-pulse rounded-xl border border-border bg-card motion-reduce:animate-none" />
+        </div>
+      }
+    >
+      <RecordsContent />
+    </Suspense>
   )
 }

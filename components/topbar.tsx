@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -42,68 +44,76 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 md:px-6">
-        <div className="flex items-center gap-3">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/95 px-3 shadow-[0_1px_0_rgba(15,23,42,0.02)] backdrop-blur-sm sm:px-4 md:px-6">
+        <div className="flex min-w-0 items-center gap-3">
           {onMenuClick && (
             <button
               onClick={onMenuClick}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
               aria-label="Toggle menu"
             >
               <Menu className="h-5 w-5" />
             </button>
           )}
-          <h1 className="text-base font-semibold text-foreground">{pageTitle}</h1>
+          <h1 className="truncate text-base font-semibold text-foreground">{pageTitle}</h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Role Switcher */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                <span
-                  className={cn(
-                    "h-2 w-2 rounded-full",
-                    role === "owner" ? "bg-violet-500" : "bg-teal-500"
-                  )}
-                />
-                View as: {role === "owner" ? "Owner" : "Director"}
-                <ChevronDown className="h-3 w-3 opacity-60" />
-              </Button>
+            <DropdownMenuTrigger
+              render={<Button variant="outline" size="sm" className="gap-1.5 text-xs" aria-label={`Switch demo role. Currently ${role}`} />}
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  role === "owner" ? "bg-violet-500" : "bg-teal-500"
+                )}
+              />
+              <span className="hidden sm:inline">View as: </span>{role === "owner" ? "Owner" : "Director"}
+              <ChevronDown className="h-3 w-3 opacity-60" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Demo Role Switcher</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setRole("owner")} className="gap-2">
-                <span className="h-2 w-2 rounded-full bg-violet-500" />
-                Owner / Admin
-                {role === "owner" && <Check className="ml-auto h-3.5 w-3.5" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRole("director")} className="gap-2">
-                <span className="h-2 w-2 rounded-full bg-teal-500" />
-                Director
-                {role === "director" && <Check className="ml-auto h-3.5 w-3.5" />}
-              </DropdownMenuItem>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Demo Role Switcher</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setRole("owner")}
+                  className={cn("gap-2 py-2", role === "owner" && "bg-accent/70")}
+                >
+                  <span className="h-2 w-2 rounded-full bg-violet-500" />
+                  Owner / Admin
+                  {role === "owner" && <Check className="ml-auto h-3.5 w-3.5" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setRole("director")}
+                  className={cn("gap-2 py-2", role === "director" && "bg-accent/70")}
+                >
+                  <span className="h-2 w-2 rounded-full bg-teal-500" />
+                  Director
+                  {role === "director" && <Check className="ml-auto h-3.5 w-3.5" />}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Upload Button */}
-          <Button size="sm" className="gap-1.5 text-xs" onClick={() => setUploadOpen(true)}>
+          <Button size="sm" className="gap-1.5 text-xs" onClick={() => setUploadOpen(true)} aria-label="Upload record">
             <Upload className="h-3.5 w-3.5" />
-            Upload Record
+            <span className="hidden md:inline">Upload Record</span>
           </Button>
 
           {/* Notifications */}
           <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative h-8 w-8">
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon" className="relative h-8 w-8" aria-label="Notifications" />}
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
               <div className="flex items-center justify-between px-3 py-2">
@@ -122,17 +132,17 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
                 <div className="px-3 py-4 text-center text-sm text-muted-foreground">No notifications</div>
               ) : (
                 recentNotifs.map((n) => (
-                  <DropdownMenuItem
-                    key={n.id}
-                    className="flex-col items-start gap-0.5 px-3 py-2"
-                    onClick={() => {
-                      markNotificationRead(n.id)
-                      if (n.recordId) setNotifOpen(false)
-                    }}
-                    asChild={!!n.recordId}
-                  >
-                    {n.recordId ? (
-                      <Link href={`/records/${n.recordId}`} className="flex w-full flex-col items-start gap-0.5">
+                  n.recordId ? (
+                    <DropdownMenuLinkItem
+                      key={n.id}
+                      render={<Link href={`/records/${n.recordId}`} />}
+                      className="flex-col items-start gap-0.5 px-3 py-2"
+                      onClick={() => {
+                        markNotificationRead(n.id)
+                        setNotifOpen(false)
+                      }}
+                    >
+                      <div className="flex w-full flex-col items-start gap-0.5">
                         <div className="flex w-full items-start gap-2">
                           {!n.isRead && (
                             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
@@ -145,8 +155,14 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
                             </p>
                           </div>
                         </div>
-                      </Link>
-                    ) : (
+                      </div>
+                    </DropdownMenuLinkItem>
+                  ) : (
+                    <DropdownMenuItem
+                      key={n.id}
+                      className="flex-col items-start gap-0.5 px-3 py-2"
+                      onClick={() => markNotificationRead(n.id)}
+                    >
                       <div className="flex w-full items-start gap-2">
                         {!n.isRead && (
                           <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
@@ -156,8 +172,8 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
                           <p className="mt-0.5 text-xs text-muted-foreground leading-snug">{n.message}</p>
                         </div>
                       </div>
-                    )}
-                  </DropdownMenuItem>
+                    </DropdownMenuItem>
+                  )
                 ))
               )}
             </DropdownMenuContent>
@@ -165,20 +181,20 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
           {/* User Avatar */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                {currentUser.initials}
-              </button>
+            <DropdownMenuTrigger
+              render={<button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground transition-[box-shadow,background-color] duration-150 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-label="Open account menu" />}
+            >
+              {currentUser.initials}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>
-                <p className="text-sm font-medium">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
-              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>
+                  <p className="text-sm font-medium">{currentUser.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/settings">Settings</Link>
-              </DropdownMenuItem>
+              <DropdownMenuLinkItem render={<Link href="/settings" />}>Settings</DropdownMenuLinkItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

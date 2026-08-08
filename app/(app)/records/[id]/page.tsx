@@ -39,7 +39,7 @@ const ACTIVITY_ICONS: Record<string, React.ElementType> = {
 
 export default function RecordDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { records, comments, activity, updateRecordStatus, archiveRecord, restoreRecord, addComment, currentUser, role } =
+  const { records, comments, activity, updateRecordStatus, archiveRecord, restoreRecord, addComment, currentUser, role, showToast } =
     useApp()
   const router = useRouter()
 
@@ -50,11 +50,9 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
     return (
       <div className="flex flex-col items-center gap-4 py-16">
         <p className="text-muted-foreground">Record not found.</p>
-        <Link href="/records">
-          <Button variant="outline" size="sm">
+        <Button render={<Link href="/records" />} variant="outline" size="sm">
             Back to Records
-          </Button>
-        </Link>
+        </Button>
       </div>
     )
   }
@@ -88,7 +86,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
       {/* Back */}
       <Link
         href="/records"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Records
@@ -186,11 +184,15 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
               {record.fileNames.map((name) => (
                 <div
                   key={name}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3"
+                  className="group flex items-center gap-3 rounded-lg border border-border bg-muted/25 px-4 py-3 transition-[background-color,border-color,box-shadow] duration-150 hover:border-primary/20 hover:bg-muted/50 hover:shadow-sm"
                 >
                   <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
                   <span className="flex-1 text-sm text-foreground">{name}</span>
-                  <button className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => showToast(`Download ready: ${name}`)}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
                     <Download className="h-3.5 w-3.5" />
                     Download
                   </button>
@@ -198,7 +200,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
               ))}
             </div>
             {role === "director" && !isArchived && (
-              <button className="mt-3 flex items-center gap-2 text-xs font-medium text-primary hover:underline">
+              <button type="button" onClick={() => showToast("Additional file upload is available in the Upload Record flow")} className="mt-3 flex items-center gap-2 rounded-md text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 + Upload replacement / additional file
               </button>
             )}
@@ -216,7 +218,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
             ) : (
               <div className="mt-4 space-y-4">
                 {recordComments.map((cmt) => (
-                  <div key={cmt.id} className="flex gap-3">
+                  <div key={cmt.id} className="flex gap-3 [animation:page-enter_180ms_ease-out_both]">
                     <div
                       className={cn(
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
@@ -361,7 +363,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                     variant="outline"
                     size="sm"
                     className="w-full justify-start gap-2"
-                    onClick={() => {}}
+                    onClick={() => showToast("Editing is not available in this prototype")}
                   >
                     <RefreshCw className="h-4 w-4" />
                     Edit Record

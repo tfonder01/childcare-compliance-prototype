@@ -6,14 +6,13 @@ import './globals.css'
 const _inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ComplianceIQ — Childcare Operations',
-  description: 'Internal compliance and document management portal for childcare centers.',
-  generator: 'v0.app',
+  title: 'Influential Management — Operations & Compliance',
+  description: 'Internal operations and compliance portal for Influential Management childcare centers.',
 }
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#ffffff',
+  themeColor: '#2f183e',
 }
 
 export default function RootLayout({

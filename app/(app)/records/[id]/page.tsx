@@ -19,13 +19,14 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { useApp } from "@/lib/store"
-import { LOCATIONS } from "@/lib/mock-data"
 import { StatusBadge } from "@/components/status-badge"
 import { CategoryBadge } from "@/components/category-badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { Comment } from "@/lib/types"
+import { getRecordWorkspace, isOperationsRecord } from "@/lib/record-workspaces"
+import { WorkspaceBadge } from "@/components/workspace-badge"
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   created: FileText,
@@ -39,7 +40,7 @@ const ACTIVITY_ICONS: Record<string, React.ElementType> = {
 
 export default function RecordDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { records, comments, activity, updateRecordStatus, archiveRecord, restoreRecord, addComment, currentUser, role, showToast } =
+  const { records, comments, activity, updateRecordStatus, archiveRecord, restoreRecord, addComment, currentUser, role, showToast, locations } =
     useApp()
   const router = useRouter()
 
@@ -50,14 +51,14 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
     return (
       <div className="flex flex-col items-center gap-4 py-16">
         <p className="text-muted-foreground">Record not found.</p>
-        <Button render={<Link href="/records" />} variant="outline" size="sm">
+        <Button render={<Link href="/records" />} nativeButton={false} variant="outline" size="sm">
             Back to Records
         </Button>
       </div>
     )
   }
 
-  const location = LOCATIONS.find((l) => l.id === record.locationId)
+  const location = locations.find((l) => l.id === record.locationId)
   const recordComments = comments.filter((c) => c.recordId === id)
   const recordActivity = activity
     .filter((a) => a.recordId === id)
@@ -80,16 +81,18 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
   }
 
   const isArchived = record.status === "Archived"
+  const operationsRecord = isOperationsRecord(record)
+  const backHref = operationsRecord ? "/operations" : "/records"
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       {/* Back */}
       <Link
-        href="/records"
+        href={backHref}
         className="inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Records
+        Back to {operationsRecord ? "Operations" : "Compliance"}
       </Link>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -102,7 +105,13 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                 <h1 className="text-lg font-semibold text-foreground leading-snug">{record.title}</h1>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <StatusBadge status={record.status} />
-                  <CategoryBadge category={record.category} />
+                  <WorkspaceBadge workspace={getRecordWorkspace(record)} />
+                  {record.category !== "Operations" && <CategoryBadge category={record.category} />}
+                  {operationsRecord && record.recordType && (
+                    <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      {record.recordType}
+                    </span>
+                  )}
                   {isArchived && (
                     <span className="text-xs text-muted-foreground italic">
                       This record is archived. Owners can restore it.
@@ -125,6 +134,35 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                   </Link>
                 </dd>
               </div>
+              {record.classroomAgeGroup && (
+                <div>
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Tag className="h-3 w-3" />
+                    Classroom / Age Group
+                  </dt>
+                  <dd className="mt-1 text-sm text-foreground">{record.classroomAgeGroup}</dd>
+                </div>
+              )}
+              {record.observationMonth && (
+                <div>
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    Observation Month
+                  </dt>
+                  <dd className="mt-1 text-sm text-foreground">
+                    {new Date(`${record.observationMonth}-01T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </dd>
+                </div>
+              )}
+              {record.area && (
+                <div>
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    Area
+                  </dt>
+                  <dd className="mt-1 text-sm text-foreground">{record.area}</dd>
+                </div>
+              )}
               <div>
                 <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <User className="h-3 w-3" />
@@ -199,7 +237,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               ))}
             </div>
-            {role === "director" && !isArchived && (
+            {role !== "owner" && !isArchived && (
               <button type="button" onClick={() => showToast("Additional file upload is available in the Upload Record flow")} className="mt-3 flex items-center gap-2 rounded-md text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 + Upload replacement / additional file
               </button>
@@ -357,7 +395,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                 </Button>
               )}
 
-              {role === "director" && !isArchived && (
+              {role !== "owner" && !isArchived && (
                 <>
                   <Button
                     variant="outline"
@@ -380,7 +418,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                 </>
               )}
 
-              {role === "director" && isArchived && (
+              {role !== "owner" && isArchived && (
                 <p className="text-xs text-muted-foreground rounded-lg bg-muted/40 p-3">
                   This record is archived. Only an Owner / Admin can restore it.
                 </p>

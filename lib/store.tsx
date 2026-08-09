@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback } from "react"
-import type { ComplianceRecord, Comment, ActivityEvent, Notification, Role } from "./types"
+import type { ComplianceRecord, Comment, ActivityEvent, Notification, Role, Location } from "./types"
 import { ToastViewport, type ToastMessage } from "@/components/toast-viewport"
 import {
   RECORDS as INITIAL_RECORDS,
@@ -9,12 +9,14 @@ import {
   ACTIVITY as INITIAL_ACTIVITY,
   NOTIFICATIONS as INITIAL_NOTIFICATIONS,
   USERS,
+  LOCATIONS,
 } from "./mock-data"
 
 interface AppState {
   role: Role
   setRole: (role: Role) => void
   currentUser: (typeof USERS)[0]
+  locations: Location[]
   records: ComplianceRecord[]
   comments: Comment[]
   activity: ActivityEvent[]
@@ -34,13 +36,42 @@ const AppContext = createContext<AppState | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<Role>("owner")
-  const [records, setRecords] = useState<ComplianceRecord[]>(INITIAL_RECORDS)
+  const [allRecords, setRecords] = useState<ComplianceRecord[]>(INITIAL_RECORDS)
   const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS)
   const [activity, setActivity] = useState<ActivityEvent[]>(INITIAL_ACTIVITY)
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
-  const currentUser = role === "owner" ? USERS[0] : USERS[1]
+  const currentUser =
+    role === "owner"
+      ? USERS.find((user) => user.role === "owner")!
+      : role === "director"
+        ? USERS.find((user) => user.role === "director")!
+        : USERS.find((user) => user.role === "assistant_director")!
+
+  const locations =
+    role === "owner"
+      ? LOCATIONS
+      : LOCATIONS.filter((location) => location.id === currentUser.locationId)
+
+  const records =
+    role === "owner"
+      ? allRecords
+      : allRecords.filter((record) => record.locationId === currentUser.locationId)
+
+  const visibleRecordIds = new Set(records.map((record) => record.id))
+  const visibleActivity =
+    role === "owner"
+      ? activity
+      : activity.filter((event) => visibleRecordIds.has(event.recordId))
+  const visibleComments =
+    role === "owner"
+      ? comments
+      : comments.filter((comment) => visibleRecordIds.has(comment.recordId))
+  const visibleNotifications =
+    role === "owner"
+      ? notifications
+      : notifications.filter((notification) => !notification.recordId || visibleRecordIds.has(notification.recordId))
 
   const setRole = useCallback((r: Role) => setRoleState(r), [])
 
@@ -69,7 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           r.id === id ? { ...r, status, lastUpdated: new Date().toISOString().split("T")[0] } : r
         )
       )
-      const record = records.find((r) => r.id === id)
+      const record = allRecords.find((r) => r.id === id)
       if (record) {
         addActivityEvent({
           recordId: id,
@@ -83,7 +114,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       showToast(status === "Reviewed" ? "Record marked Reviewed" : "Record marked Needs Attention")
     },
-    [records, currentUser, addActivityEvent, showToast]
+    [allRecords, currentUser, addActivityEvent, showToast]
   )
 
   const archiveRecord = useCallback(
@@ -182,7 +213,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
   }, [])
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const unreadCount = visibleNotifications.filter((n) => !n.isRead).length
 
   return (
     <AppContext.Provider
@@ -190,10 +221,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         role,
         setRole,
         currentUser,
+        locations,
         records,
-        comments,
-        activity,
-        notifications,
+        comments: visibleComments,
+        activity: visibleActivity,
+        notifications: visibleNotifications,
         updateRecordStatus,
         archiveRecord,
         restoreRecord,

@@ -4,29 +4,20 @@ import { use, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, MapPin, Phone, Upload, AlertCircle, FileText } from "lucide-react"
 import { useApp } from "@/lib/store"
-import { LOCATIONS } from "@/lib/mock-data"
+import { COMPLIANCE_CATEGORIES } from "@/lib/mock-data"
+import { getRecordWorkspace } from "@/lib/record-workspaces"
+import { WorkspaceBadge } from "@/components/workspace-badge"
 import { StatusBadge } from "@/components/status-badge"
 import { CategoryBadge } from "@/components/category-badge"
 import { Button } from "@/components/ui/button"
 import { UploadModal } from "@/components/upload-modal"
-import type { ComplianceCategory } from "@/lib/types"
-
-const CATEGORY_ORDER: ComplianceCategory[] = [
-  "Licensing",
-  "Health & Safety Drills",
-  "Child Files",
-  "Staff Files",
-  "CCIR / Critical Incidents",
-  "Parent Complaints",
-  "Staff Complaints",
-]
 
 export default function LocationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { records, activity } = useApp()
+  const { records, activity, locations } = useApp()
   const [uploadOpen, setUploadOpen] = useState(false)
 
-  const location = LOCATIONS.find((l) => l.id === id)
+  const location = locations.find((l) => l.id === id)
 
   if (!location) {
     return (
@@ -55,7 +46,7 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
     .slice(0, 5)
 
   // Category breakdown
-  const byCategory = CATEGORY_ORDER.map((cat) => ({
+  const byCategory = COMPLIANCE_CATEGORIES.map((cat) => ({
     category: cat,
     count: locRecords.filter((r) => r.category === cat).length,
   })).filter((c) => c.count > 0)
@@ -168,7 +159,11 @@ export default function LocationDetailPage({ params }: { params: Promise<{ id: s
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-sm font-medium text-foreground">{rec.title}</p>
                         <div className="mt-0.5 flex items-center gap-2">
-                          <CategoryBadge category={rec.category} className="text-[10px]" />
+                          {rec.category === "Operations" ? (
+                            <WorkspaceBadge workspace={getRecordWorkspace(rec)} className="text-[10px]" />
+                          ) : (
+                            <CategoryBadge category={rec.category} className="text-[10px]" />
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {new Date(rec.uploadDate).toLocaleDateString("en-US", {
                               month: "short",

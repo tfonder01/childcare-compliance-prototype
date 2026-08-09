@@ -2,7 +2,7 @@
 
 import { Shield, MapPin, Users, Bell, Database } from "lucide-react"
 import { useApp } from "@/lib/store"
-import { LOCATIONS, USERS } from "@/lib/mock-data"
+import { COMPLIANCE_CATEGORIES, LOCATIONS, OPERATIONS_RECORD_TYPES, USERS } from "@/lib/mock-data"
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -30,7 +30,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <p className="font-semibold text-foreground">{currentUser.name}</p>
-            <p className="text-sm capitalize text-muted-foreground">{currentUser.role}</p>
+            <p className="text-sm capitalize text-muted-foreground">{currentUser.role.replace("_", " ")}</p>
             {currentUser.locationId && (
               <p className="text-xs text-muted-foreground">
                 {LOCATIONS.find((l) => l.id === currentUser.locationId)?.name}
@@ -89,7 +89,7 @@ export default function SettingsPage() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{user.name}</p>
                   <p className="text-xs capitalize text-muted-foreground">
-                    {user.role}
+                    {user.role.replace("_", " ")}
                     {user.locationId && (
                       <> &middot; {LOCATIONS.find((l) => l.id === user.locationId)?.name}</>
                     )}
@@ -102,7 +102,7 @@ export default function SettingsPage() {
                       : "bg-teal-100 text-teal-700"
                   }`}
                 >
-                  {user.role}
+                  {user.role.replace("_", " ")}
                 </span>
               </div>
             ))}
@@ -141,15 +141,7 @@ export default function SettingsPage() {
       {/* Compliance Categories */}
       <Section title="Compliance Categories">
         <div className="flex flex-wrap gap-2">
-          {[
-            "Licensing",
-            "Health & Safety Drills",
-            "Child Files",
-            "Staff Files",
-            "CCIR / Critical Incidents",
-            "Parent Complaints",
-            "Staff Complaints",
-          ].map((cat) => (
+          {COMPLIANCE_CATEGORIES.map((cat) => (
             <span
               key={cat}
               className="rounded-md border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground"
@@ -160,6 +152,22 @@ export default function SettingsPage() {
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
           Category management will be available in a future release. Categories can be customized per regulatory requirements.
+        </p>
+      </Section>
+
+      <Section title="Operations Record Types">
+        <div className="flex flex-wrap gap-2">
+          {OPERATIONS_RECORD_TYPES.map((type) => (
+            <span
+              key={type}
+              className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+            >
+              {type}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Operations record-type management will be available in a future release.
         </p>
       </Section>
 

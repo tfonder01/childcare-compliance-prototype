@@ -9,23 +9,15 @@ import {
   ArrowRight,
   FileText,
   MapPin,
+  ClipboardCheck,
+  Wrench,
 } from "lucide-react"
 import { useApp } from "@/lib/store"
-import { LOCATIONS } from "@/lib/mock-data"
+import { COMPLIANCE_CATEGORIES, FUTURE_MAINTENANCE_INSIGHT } from "@/lib/mock-data"
 import { StatusBadge } from "@/components/status-badge"
 import { CategoryBadge } from "@/components/category-badge"
-import type { ComplianceCategory } from "@/lib/types"
 import { useState, useEffect } from "react"
-
-const CATEGORY_ORDER: ComplianceCategory[] = [
-  "Licensing",
-  "Health & Safety Drills",
-  "Child Files",
-  "Staff Files",
-  "CCIR / Critical Incidents",
-  "Parent Complaints",
-  "Staff Complaints",
-]
+import { isOperationsRecord } from "@/lib/record-workspaces"
 
 function StatCard({
   label,
@@ -57,11 +49,12 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { records, activity, role } = useApp()
+  const { records, activity, role, locations } = useApp()
   const [now, setNow] = useState<number | null>(null)
   useEffect(() => { setNow(Date.now()) }, [])
 
   const activeRecords = records.filter((r) => r.status !== "Archived")
+  const operationsRecords = activeRecords.filter(isOperationsRecord)
   const newUploads = records.filter((r) => r.status === "New").length
   const needsAttention = records.filter((r) => r.status === "Needs Attention").length
   // Use the most recent month present in the data as "current month"
@@ -88,7 +81,7 @@ export default function DashboardPage() {
     .slice(0, 6)
 
   // Records by location
-  const byLocation = LOCATIONS.map((loc) => {
+  const byLocation = locations.map((loc) => {
     const locRecords = activeRecords.filter((r) => r.locationId === loc.id)
     return {
       ...loc,
@@ -99,10 +92,20 @@ export default function DashboardPage() {
   })
 
   // Records by category
-  const byCategory = CATEGORY_ORDER.map((cat) => {
+  const byCategory = COMPLIANCE_CATEGORIES.map((cat) => {
     const catRecords = activeRecords.filter((r) => r.category === cat)
     return { category: cat, count: catRecords.length }
   }).filter((c) => c.count > 0)
+
+  const auditMetrics = role === "owner"
+    ? [
+        { label: "Child Files", active: 124, required: 13, reviewed: 8, remaining: 5 },
+        { label: "Staff Files", active: 38, required: 4, reviewed: 3, remaining: 1 },
+      ]
+    : [
+        { label: "Child Files", active: 46, required: 5, reviewed: 3, remaining: 2 },
+        { label: "Staff Files", active: 14, required: 2, reviewed: 1, remaining: 1 },
+      ]
 
   return (
     <div className="space-y-6">
@@ -138,6 +141,50 @@ export default function DashboardPage() {
         />
       </div>
 
+      <section className="overflow-hidden rounded-xl border border-violet-200/70 bg-card shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-border bg-violet-50/45 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+              <ClipboardCheck className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Monthly File Audits</h2>
+              <p className="text-xs text-muted-foreground">Prototype concept · 10% monthly sample target</p>
+            </div>
+          </div>
+          <span className="w-fit rounded-full border border-violet-200 bg-white px-2.5 py-1 text-[11px] font-medium text-violet-700">Future workflow preview</span>
+        </div>
+        <div className="grid gap-px bg-border md:grid-cols-2">
+          {auditMetrics.map((metric) => {
+            const progress = Math.round((metric.reviewed / metric.required) * 100)
+            return (
+              <div key={metric.label} className="bg-card p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">{metric.label}</p>
+                  <span className="text-xs font-medium text-emerald-700">{metric.reviewed} of {metric.required} reviewed</span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted" aria-label={`${metric.label} audit progress: ${progress}%`}>
+                  <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-300" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                  {[
+                    ["Active", metric.active],
+                    ["Target", "10%"],
+                    ["Required", metric.required],
+                    ["Remaining", metric.remaining],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-lg bg-muted/45 px-2 py-2">
+                      <p className="text-sm font-bold text-foreground">{value}</p>
+                      <p className="text-[10px] text-muted-foreground">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Uploads */}
         <div className="lg:col-span-2 space-y-4">
@@ -153,7 +200,7 @@ export default function DashboardPage() {
             </div>
             <div className="divide-y divide-border">
               {recentUploads.map((rec) => {
-                const location = LOCATIONS.find((l) => l.id === rec.locationId)
+                const location = locations.find((l) => l.id === rec.locationId)
                 return (
                   <Link
                     key={rec.id}
@@ -200,7 +247,7 @@ export default function DashboardPage() {
             ) : (
               <div className="divide-y divide-border">
                 {needsReviewRecords.map((rec) => {
-                  const location = LOCATIONS.find((l) => l.id === rec.locationId)
+                  const location = locations.find((l) => l.id === rec.locationId)
                   const daysAgo =
                     now !== null
                       ? Math.floor((now - new Date(rec.uploadDate).getTime()) / 86400000)
@@ -318,16 +365,35 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Audit Placeholder */}
+          <Link
+            href="/operations"
+            className="interactive-card block rounded-xl border border-blue-200/70 bg-card p-5"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Operations Records</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">{operationsRecords.length}</p>
+              </div>
+              <div className="text-right text-[11px] text-muted-foreground">
+                <p>{operationsRecords.filter((record) => record.status === "New").length} new</p>
+                <p>{operationsRecords.filter((record) => record.status === "Needs Attention").length} need attention</p>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">Recurring checklists and operational documentation</p>
+          </Link>
+
+          {/* Future maintenance analytics concept */}
           {role === "owner" && (
-            <div className="mt-7 rounded-xl border border-dashed border-border/80 bg-muted/15 p-5 opacity-80">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Coming Soon
+            <div className="rounded-xl border border-dashed border-orange-200 bg-orange-50/35 p-5">
+              <div className="flex items-center gap-2 text-orange-700">
+                <Wrench className="h-4 w-4" />
+                <p className="text-xs font-semibold uppercase tracking-wide">Future Insights</p>
+              </div>
+              <p className="mt-2 text-sm font-medium text-foreground">Repeated maintenance issues</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {FUTURE_MAINTENANCE_INSIGHT.asset} · {FUTURE_MAINTENANCE_INSIGHT.invoiceFileNames.length} repairs · ${FUTURE_MAINTENANCE_INSIGHT.estimatedCost?.toLocaleString()} total
               </p>
-              <p className="mt-1 text-sm font-medium text-foreground">Compliance Audits</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Random sample audits, checklists, and audit completion tracking.
-              </p>
+              <p className="mt-2 text-[11px] text-muted-foreground">Cost and vendor trend analytics are planned for a later phase.</p>
             </div>
           )}
         </div>

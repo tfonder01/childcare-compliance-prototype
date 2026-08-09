@@ -21,13 +21,22 @@ import { usePathname } from "next/navigation"
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/records": "Compliance Records",
+  "/records": "Compliance",
+  "/operations": "Operations",
+  "/maintenance": "Maintenance",
+  "/supply-requests": "Supply Requests",
   "/locations": "Locations",
   "/needs-review": "Needs Review",
   "/activity": "Activity",
   "/archived": "Archived Records",
   "/settings": "Settings",
 }
+
+const ROLE_LABELS = {
+  owner: "Owner",
+  director: "Director",
+  assistant_director: "Assistant Director",
+} as const
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { role, setRole, currentUser, notifications, unreadCount, markAllNotificationsRead, markNotificationRead } =
@@ -38,9 +47,14 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const pageTitle =
     Object.entries(PAGE_TITLES).find(([path]) => pathname === path || pathname.startsWith(path + "/"))?.[1] ??
-    "ComplianceIQ"
+    "Influential Management"
 
   const recentNotifs = notifications.slice(0, 5)
+  const defaultUploadWorkspace = pathname.startsWith("/operations")
+    ? "operations"
+    : pathname.startsWith("/records")
+      ? "compliance"
+      : undefined
 
   return (
     <>
@@ -67,10 +81,10 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <span
                 className={cn(
                   "h-2 w-2 rounded-full",
-                  role === "owner" ? "bg-violet-500" : "bg-teal-500"
+                  role === "owner" ? "bg-violet-500" : role === "director" ? "bg-emerald-500" : "bg-blue-500"
                 )}
               />
-              <span className="hidden sm:inline">View as: </span>{role === "owner" ? "Owner" : "Director"}
+              <span className="hidden sm:inline">View as: </span>{ROLE_LABELS[role]}
               <ChevronDown className="h-3 w-3 opacity-60" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -82,16 +96,24 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
                   className={cn("gap-2 py-2", role === "owner" && "bg-accent/70")}
                 >
                   <span className="h-2 w-2 rounded-full bg-violet-500" />
-                  Owner / Admin
+                  Owner
                   {role === "owner" && <Check className="ml-auto h-3.5 w-3.5" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setRole("director")}
                   className={cn("gap-2 py-2", role === "director" && "bg-accent/70")}
                 >
-                  <span className="h-2 w-2 rounded-full bg-teal-500" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   Director
                   {role === "director" && <Check className="ml-auto h-3.5 w-3.5" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setRole("assistant_director")}
+                  className={cn("gap-2 py-2", role === "assistant_director" && "bg-accent/70")}
+                >
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
+                  Assistant Director
+                  {role === "assistant_director" && <Check className="ml-auto h-3.5 w-3.5" />}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -200,7 +222,12 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
         </div>
       </header>
 
-      <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
+      <UploadModal
+        key={defaultUploadWorkspace ?? "global"}
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        defaultWorkspace={defaultUploadWorkspace}
+      />
     </>
   )
 }

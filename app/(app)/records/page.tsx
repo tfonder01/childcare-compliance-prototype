@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Search, FileText, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { useApp } from "@/lib/store"
-import { LOCATIONS } from "@/lib/mock-data"
+import { CLASSROOM_AGE_GROUPS, COMPLIANCE_CATEGORIES } from "@/lib/mock-data"
 import { StatusBadge } from "@/components/status-badge"
 import { CategoryBadge } from "@/components/category-badge"
 import { Input } from "@/components/ui/input"
@@ -16,17 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { ComplianceCategory, RecordStatus } from "@/lib/types"
-
-const CATEGORIES: ComplianceCategory[] = [
-  "Licensing",
-  "Health & Safety Drills",
-  "Child Files",
-  "Staff Files",
-  "CCIR / Critical Incidents",
-  "Parent Complaints",
-  "Staff Complaints",
-]
+import type { RecordStatus } from "@/lib/types"
+import { isComplianceRecord } from "@/lib/record-workspaces"
 
 const STATUSES: RecordStatus[] = ["New", "Reviewed", "Needs Attention", "Archived"]
 
@@ -43,12 +34,13 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 }
 
 function RecordsContent() {
-  const { records, role } = useApp()
+  const { records, locations } = useApp()
   const searchParams = useSearchParams()
 
   const [search, setSearch] = useState("")
-  const [locationFilter, setLocationFilter] = useState("all")
+  const [locationFilter, setLocationFilter] = useState(searchParams.get("location") ?? "all")
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") ?? "all")
+  const [classroomFilter, setClassroomFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "all")
   const [sortField, setSortField] = useState<SortField>("uploadDate")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
@@ -63,7 +55,7 @@ function RecordsContent() {
   }
 
   const filtered = useMemo(() => {
-    let result = records
+    let result = records.filter(isComplianceRecord)
     if (search) {
       const q = search.toLowerCase()
       result = result.filter(
@@ -75,6 +67,7 @@ function RecordsContent() {
     }
     if (locationFilter !== "all") result = result.filter((r) => r.locationId === locationFilter)
     if (categoryFilter !== "all") result = result.filter((r) => r.category === categoryFilter)
+    if (classroomFilter !== "all") result = result.filter((r) => r.classroomAgeGroup === classroomFilter)
     if (statusFilter !== "all") result = result.filter((r) => r.status === statusFilter)
 
     return [...result].sort((a, b) => {
@@ -82,8 +75,8 @@ function RecordsContent() {
       let bv = ""
       if (sortField === "title") { av = a.title; bv = b.title }
       else if (sortField === "location") {
-        av = LOCATIONS.find((l) => l.id === a.locationId)?.name ?? ""
-        bv = LOCATIONS.find((l) => l.id === b.locationId)?.name ?? ""
+        av = locations.find((l) => l.id === a.locationId)?.name ?? ""
+        bv = locations.find((l) => l.id === b.locationId)?.name ?? ""
       }
       else if (sortField === "category") { av = a.category; bv = b.category }
       else if (sortField === "uploadDate") { av = a.uploadDate; bv = b.uploadDate }
@@ -92,7 +85,7 @@ function RecordsContent() {
       const cmp = av.localeCompare(bv)
       return sortDir === "asc" ? cmp : -cmp
     })
-  }, [records, search, locationFilter, categoryFilter, statusFilter, sortField, sortDir])
+  }, [records, locations, search, locationFilter, categoryFilter, classroomFilter, statusFilter, sortField, sortDir])
 
   const ThCell = ({
     field,
@@ -116,6 +109,20 @@ function RecordsContent() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-xl border border-emerald-200/70 bg-emerald-50/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Monthly classroom observation cadence</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Approximately 11 observation uploads are expected each month across locations and age groups.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCategoryFilter("Classroom Observations")}
+          className="w-fit rounded-md border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+        >
+          View observations
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -133,12 +140,12 @@ function RecordsContent() {
             <SelectValue>
               {locationFilter === "all"
                 ? "All Locations"
-                : LOCATIONS.find((l) => l.id === locationFilter)?.name ?? "All Locations"}
+                : locations.find((l) => l.id === locationFilter)?.name ?? "All Locations"}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Locations</SelectItem>
-            {LOCATIONS.map((l) => (
+            {locations.map((l) => (
               <SelectItem key={l.id} value={l.id}>
                 {l.name}
               </SelectItem>
@@ -154,10 +161,24 @@ function RecordsContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {CATEGORIES.map((c) => (
+            {COMPLIANCE_CATEGORIES.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
               </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={classroomFilter} onValueChange={(value) => setClassroomFilter(value ?? "all")}>
+          <SelectTrigger className="h-9 w-full text-sm sm:w-[180px]">
+            <SelectValue>
+              {classroomFilter === "all" ? "All Classrooms" : classroomFilter}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Classrooms</SelectItem>
+            {CLASSROOM_AGE_GROUPS.map((group) => (
+              <SelectItem key={group} value={group}>{group}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -189,7 +210,7 @@ function RecordsContent() {
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/40">
               <tr>
-                <ThCell field="title">Record Title</ThCell>
+                <ThCell field="title" className="w-[42%] min-w-[280px]">Record Title</ThCell>
                 <ThCell field="location">Location</ThCell>
                 <ThCell field="category" className="hidden lg:table-cell">Category</ThCell>
                 <ThCell field="uploadDate" className="hidden md:table-cell">Uploaded</ThCell>
@@ -206,22 +227,28 @@ function RecordsContent() {
                 </tr>
               ) : (
                 filtered.map((rec) => {
-                  const location = LOCATIONS.find((l) => l.id === rec.locationId)
+                  const location = locations.find((l) => l.id === rec.locationId)
                   return (
                     <tr
                       key={rec.id}
                       className="group cursor-pointer transition-colors duration-150 hover:bg-muted/50 focus-within:bg-muted/50"
                     >
                       <td className="px-4 py-3.5">
-                        <Link href={`/records/${rec.id}`} className="flex items-center gap-3">
+                        <Link href={`/records/${rec.id}`} className="flex min-w-0 items-start gap-3" aria-label={`Open ${rec.title}`}>
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-foreground leading-snug group-hover:text-primary truncate max-w-[260px]">
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="line-clamp-2 max-w-[460px] whitespace-normal break-words font-medium leading-5 text-foreground group-hover:text-primary"
+                              title={rec.title}
+                            >
                               {rec.title}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">{rec.uploadedBy}</p>
+                            {rec.classroomAgeGroup && (
+                              <p className="mt-0.5 text-[11px] font-medium text-emerald-700">{rec.classroomAgeGroup} classroom</p>
+                            )}
                           </div>
                         </Link>
                       </td>

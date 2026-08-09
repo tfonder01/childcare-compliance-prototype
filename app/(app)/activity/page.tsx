@@ -14,6 +14,7 @@ import { useApp } from "@/lib/store"
 import { LOCATIONS } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 import { fmtDate, fmtTime } from "@/lib/format-date"
+import { getRecordWorkspace } from "@/lib/record-workspaces"
 
 const EVENT_CONFIG: Record<
   string,
@@ -96,12 +97,14 @@ export default function ActivityPage() {
                           </Link>
                         )}
                         {location && (
-                          <p className="text-[11px] text-muted-foreground">{location.name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {location.name} &middot; {record && getRecordWorkspace(record) === "operations" ? "Operations" : "Compliance"}
+                          </p>
                         )}
                       </div>
                       <div className="flex shrink-0 items-center gap-1.5 text-left sm:block sm:text-right">
                         <p className="text-xs font-medium text-foreground">{evt.user}</p>
-                        <p className="text-[11px] capitalize text-muted-foreground">{evt.role}</p>
+                        <p className="text-[11px] capitalize text-muted-foreground">{evt.role.replace("_", " ")}</p>
                         <p className="text-[11px] text-muted-foreground">
                           {fmtTime(evt.timestamp)}
                         </p>

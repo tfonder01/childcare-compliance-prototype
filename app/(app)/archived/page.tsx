@@ -7,6 +7,8 @@ import { LOCATIONS } from "@/lib/mock-data"
 import { CategoryBadge } from "@/components/category-badge"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { getRecordWorkspace } from "@/lib/record-workspaces"
+import { WorkspaceBadge } from "@/components/workspace-badge"
 
 export default function ArchivedPage() {
   const { records, activity, restoreRecord, role } = useApp()
@@ -62,7 +64,7 @@ export default function ArchivedPage() {
                     Location
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hidden lg:table-cell">
-                    Category
+                    Workspace / Category
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hidden md:table-cell">
                     Archived By
@@ -88,12 +90,18 @@ export default function ArchivedPage() {
                       <td className="px-4 py-3.5">
                         <p className="font-medium text-foreground max-w-[220px] truncate">{rec.title}</p>
                         <p className="text-xs text-muted-foreground">{rec.uploadedBy}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {rec.category === "Operations" ? `Operations · ${rec.recordType ?? "Operations Record"}` : `Compliance · ${rec.category}`}
+                        </p>
                       </td>
                       <td className="hidden px-4 py-3.5 text-xs text-foreground md:table-cell">
                         {location?.name ?? "—"}
                       </td>
                       <td className="hidden px-4 py-3.5 lg:table-cell">
-                        <CategoryBadge category={rec.category} />
+                        <div className="flex flex-wrap gap-1.5">
+                          <WorkspaceBadge workspace={getRecordWorkspace(rec)} />
+                          {rec.category !== "Operations" && <CategoryBadge category={rec.category} />}
+                        </div>
                       </td>
                       <td className="hidden px-4 py-3.5 text-xs text-muted-foreground md:table-cell">
                         {archiveEvent?.user ?? "—"}

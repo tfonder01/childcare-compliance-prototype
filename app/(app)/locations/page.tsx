@@ -3,12 +3,11 @@
 import Link from "next/link"
 import { MapPin, Users, FileText, AlertCircle, ArrowRight } from "lucide-react"
 import { useApp } from "@/lib/store"
-import { LOCATIONS } from "@/lib/mock-data"
 
 export default function LocationsPage() {
-  const { records, role } = useApp()
+  const { records, locations } = useApp()
 
-  const locationsWithStats = LOCATIONS.map((loc) => {
+  const locationsWithStats = locations.map((loc) => {
     const locRecords = records.filter((r) => r.locationId === loc.id && r.status !== "Archived")
     const newCount = locRecords.filter((r) => r.status === "New").length
     const attentionCount = locRecords.filter((r) => r.status === "Needs Attention").length
@@ -21,19 +20,10 @@ export default function LocationsPage() {
     return { ...loc, total: locRecords.length, newCount, attentionCount, reviewedCount, lastUpload }
   })
 
-  // Directors only see their assigned location
-  const visible =
-    role === "director"
-      ? locationsWithStats.filter((l) => {
-          // find the director user whose locationId matches
-          return true // show all for demo; in a real app filter by currentUser.locationId
-        })
-      : locationsWithStats
-
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {visible.map((loc) => (
+        {locationsWithStats.map((loc) => (
           <Link
             key={loc.id}
             href={`/locations/${loc.id}`}

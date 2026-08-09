@@ -6,6 +6,7 @@ const CATEGORY_CONFIG: Record<ComplianceCategory, { className: string }> = {
   "Health & Safety Drills": { className: "bg-teal-50 text-teal-700 border-teal-200" },
   "Child Files": { className: "bg-sky-50 text-sky-700 border-sky-200" },
   "Staff Files": { className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  "Classroom Observations": { className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   "CCIR / Critical Incidents": { className: "bg-red-50 text-red-700 border-red-200" },
   "Parent Complaints": { className: "bg-orange-50 text-orange-700 border-orange-200" },
   "Staff Complaints": { className: "bg-pink-50 text-pink-700 border-pink-200" },

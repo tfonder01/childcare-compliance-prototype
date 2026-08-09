@@ -1,4 +1,4 @@
-export type Role = "owner" | "director"
+export type Role = "owner" | "director" | "assistant_director"
 
 export type RecordStatus = "New" | "Reviewed" | "Needs Attention" | "Archived"
 
@@ -7,9 +7,26 @@ export type ComplianceCategory =
   | "Health & Safety Drills"
   | "Child Files"
   | "Staff Files"
+  | "Classroom Observations"
   | "CCIR / Critical Incidents"
   | "Parent Complaints"
   | "Staff Complaints"
+
+export type RecordCategory = ComplianceCategory | "Operations"
+export type RecordWorkspace = "compliance" | "operations"
+
+export type OperationsRecordType =
+  | "Opening Checklist"
+  | "Closing Checklist"
+  | "Playground Checklist"
+  | "Other Operations Record"
+
+export type ClassroomAgeGroup =
+  | "Infant"
+  | "Toddler"
+  | "Twaddler"
+  | "Prepper"
+  | "Preschool"
 
 export interface Location {
   id: string
@@ -25,7 +42,9 @@ export interface ComplianceRecord {
   id: string
   title: string
   locationId: string
-  category: ComplianceCategory
+  category: RecordCategory
+  workspace?: RecordWorkspace
+  recordType?: OperationsRecordType
   status: RecordStatus
   uploadedBy: string
   uploadedById: string
@@ -35,6 +54,9 @@ export interface ComplianceRecord {
   fileNames: string[]
   tags: string[]
   relatedRef?: string
+  classroomAgeGroup?: ClassroomAgeGroup
+  observationMonth?: string
+  area?: string
 }
 
 export interface ActivityEvent {
@@ -82,4 +104,26 @@ export interface User {
   role: Role
   locationId?: string
   initials: string
+}
+
+export interface MaintenanceRequestDraft {
+  id: string
+  locationId: string
+  classroomAgeGroup?: ClassroomAgeGroup
+  area: string
+  category: string
+  asset?: string
+  vendor?: string
+  estimatedCost?: number
+  invoiceFileNames: string[]
+  repeatIssueKey?: string
+}
+
+export interface SupplyRequestDraft {
+  id: string
+  locationId: string
+  classroomAgeGroup?: ClassroomAgeGroup
+  requestedById: string
+  items: Array<{ name: string; quantity: number }>
+  status: "Draft" | "Submitted" | "Approved" | "Declined"
 }

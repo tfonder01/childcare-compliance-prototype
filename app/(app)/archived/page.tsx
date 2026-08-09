@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { getRecordWorkspace } from "@/lib/record-workspaces"
 import { WorkspaceBadge } from "@/components/workspace-badge"
+import { MaintenanceStatusBadge } from "@/components/maintenance-badges"
 
 export default function ArchivedPage() {
-  const { records, activity, restoreRecord, role } = useApp()
+  const { records, activity, restoreRecord, role, maintenanceRequests, restoreMaintenanceRequest } = useApp()
   const [restoringId, setRestoringId] = useState<string | null>(null)
 
   const handleRestore = (recordId: string) => {
@@ -23,6 +24,7 @@ export default function ArchivedPage() {
   }
 
   const archived = records.filter((r) => r.status === "Archived")
+  const archivedMaintenance = maintenanceRequests.filter((request) => request.archived)
 
   // Get who archived each record
   const getArchiveEvent = (recordId: string) => {
@@ -150,6 +152,40 @@ export default function ArchivedPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-5 py-4">
+          <h2 className="text-sm font-semibold text-foreground">Archived Maintenance ({archivedMaintenance.length})</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Completed and cancelled repair records retain their cost and activity history.</p>
+        </div>
+        {archivedMaintenance.length === 0 ? (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">No archived maintenance requests.</p>
+        ) : (
+          <div className="divide-y divide-border">
+            {archivedMaintenance.map((request) => {
+              const location = LOCATIONS.find((item) => item.id === request.locationId)
+              const archiveEvent = getArchiveEvent(request.id)
+              return (
+                <div key={request.id} className="flex flex-col gap-3 px-5 py-4 opacity-80 transition-opacity hover:opacity-100 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/maintenance/${request.id}`} className="truncate text-sm font-medium text-foreground hover:text-primary hover:underline">{request.title}</Link>
+                    <p className="mt-0.5 text-xs text-muted-foreground">Maintenance · {location?.name} · {request.area}</p>
+                    <div className="mt-2"><MaintenanceStatusBadge status={request.maintenanceStatus} /></div>
+                  </div>
+                  <div className="text-xs text-muted-foreground sm:text-right">
+                    <p>{archiveEvent ? `Archived by ${archiveEvent.user}` : "Archived"}</p>
+                    <p className="mt-0.5">{new Date(archiveEvent?.timestamp ?? request.lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                  </div>
+                  <div className="flex items-center gap-2 sm:ml-2">
+                    {role === "owner" && <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => restoreMaintenanceRequest(request.id)}><RotateCcw className="h-3.5 w-3.5" />Restore</Button>}
+                    <Button render={<Link href={`/maintenance/${request.id}`} />} nativeButton={false} variant="ghost" size="icon" aria-label={`Open ${request.title}`}><ExternalLink className="h-3.5 w-3.5" /></Button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

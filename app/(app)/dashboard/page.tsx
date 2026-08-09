@@ -13,7 +13,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { useApp } from "@/lib/store"
-import { COMPLIANCE_CATEGORIES, FUTURE_MAINTENANCE_INSIGHT } from "@/lib/mock-data"
+import { COMPLIANCE_CATEGORIES } from "@/lib/mock-data"
 import { StatusBadge } from "@/components/status-badge"
 import { CategoryBadge } from "@/components/category-badge"
 import { useState, useEffect } from "react"
@@ -49,12 +49,17 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { records, activity, role, locations } = useApp()
+  const { records, activity, role, locations, maintenanceRequests } = useApp()
   const [now, setNow] = useState<number | null>(null)
   useEffect(() => { setNow(Date.now()) }, [])
 
   const activeRecords = records.filter((r) => r.status !== "Archived")
   const operationsRecords = activeRecords.filter(isOperationsRecord)
+  const activeMaintenance = maintenanceRequests.filter((request) => !request.archived)
+  const maintenanceAttention = activeMaintenance.filter((request) =>
+    request.approvalStatus === "Awaiting Approval" || request.needsMoreInfo || ["Submitted", "Waiting"].includes(request.maintenanceStatus)
+  )
+  const maintenanceAwaitingApproval = activeMaintenance.filter((request) => request.approvalStatus === "Awaiting Approval")
   const newUploads = records.filter((r) => r.status === "New").length
   const needsAttention = records.filter((r) => r.status === "Needs Attention").length
   // Use the most recent month present in the data as "current month"
@@ -382,20 +387,17 @@ export default function DashboardPage() {
             <p className="mt-3 text-xs text-muted-foreground">Recurring checklists and operational documentation</p>
           </Link>
 
-          {/* Future maintenance analytics concept */}
-          {role === "owner" && (
-            <div className="rounded-xl border border-dashed border-orange-200 bg-orange-50/35 p-5">
+          <Link href="/maintenance" className="interactive-card block rounded-xl border border-orange-200/70 bg-card p-5">
               <div className="flex items-center gap-2 text-orange-700">
                 <Wrench className="h-4 w-4" />
-                <p className="text-xs font-semibold uppercase tracking-wide">Future Insights</p>
+                <p className="text-xs font-semibold uppercase tracking-wide">Maintenance</p>
               </div>
-              <p className="mt-2 text-sm font-medium text-foreground">Repeated maintenance issues</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                {FUTURE_MAINTENANCE_INSIGHT.asset} · {FUTURE_MAINTENANCE_INSIGHT.invoiceFileNames.length} repairs · ${FUTURE_MAINTENANCE_INSIGHT.estimatedCost?.toLocaleString()} total
-              </p>
-              <p className="mt-2 text-[11px] text-muted-foreground">Cost and vendor trend analytics are planned for a later phase.</p>
-            </div>
-          )}
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <div><p className="text-2xl font-bold text-foreground">{maintenanceAttention.length}</p><p className="text-xs text-muted-foreground">need attention</p></div>
+                <div className="text-right"><p className="text-sm font-semibold text-amber-700">{maintenanceAwaitingApproval.length}</p><p className="text-[11px] text-muted-foreground">awaiting approval</p></div>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">Open requests, approvals, and recent repair activity</p>
+          </Link>
         </div>
       </div>
     </div>

@@ -76,8 +76,8 @@ export function FutureWorkflowPage({ kind }: { kind: WorkflowKind }) {
               </div>
               <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-4">
                 <p className="text-xs font-semibold text-orange-800">Future repeat-issue signal</p>
-                <p className="mt-1 text-sm font-medium text-foreground">{FUTURE_MAINTENANCE_INSIGHT.asset} · {FUTURE_MAINTENANCE_INSIGHT.area}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{FUTURE_MAINTENANCE_INSIGHT.invoiceFileNames.length} repair invoices · ${FUTURE_MAINTENANCE_INSIGHT.estimatedCost?.toLocaleString()} total · {FUTURE_MAINTENANCE_INSIGHT.vendor}</p>
+                <p className="mt-1 text-sm font-medium text-foreground">{FUTURE_MAINTENANCE_INSIGHT.assetName} · {FUTURE_MAINTENANCE_INSIGHT.area}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{FUTURE_MAINTENANCE_INSIGHT.invoices.length} repair invoice · ${FUTURE_MAINTENANCE_INSIGHT.repeatRecordedCost?.toLocaleString()} total · {FUTURE_MAINTENANCE_INSIGHT.vendor}</p>
               </div>
             </div>
           ) : (

@@ -90,11 +90,12 @@ export interface Comment {
 
 export interface Notification {
   id: string
-  type: "upload" | "status_change" | "comment" | "attention"
+  type: "upload" | "status_change" | "comment" | "attention" | "maintenance"
   title: string
   message: string
   timestamp: string
   recordId?: string
+  source?: "records" | "maintenance"
   isRead: boolean
 }
 
@@ -106,17 +107,71 @@ export interface User {
   initials: string
 }
 
-export interface MaintenanceRequestDraft {
+export type MaintenanceCategory =
+  | "Plumbing"
+  | "Electrical"
+  | "HVAC"
+  | "Appliance"
+  | "Furniture / Fixture"
+  | "Playground"
+  | "Building / Facility"
+  | "Safety"
+  | "Cleaning / Sanitation"
+  | "Other"
+
+export type MaintenancePriority = "Low" | "Normal" | "High" | "Urgent"
+export type MaintenanceApprovalStatus =
+  | "Not Required"
+  | "Awaiting Approval"
+  | "Approved"
+  | "Declined"
+export type MaintenanceStatus =
+  | "Submitted"
+  | "Approved / Ready"
+  | "In Progress"
+  | "Waiting"
+  | "Completed"
+  | "Cancelled"
+
+export interface MaintenanceAttachment {
+  name: string
+  uploadedAt: string
+  uploadedBy: string
+}
+
+export interface MaintenanceRequest {
   id: string
+  title: string
+  description: string
   locationId: string
   classroomAgeGroup?: ClassroomAgeGroup
   area: string
-  category: string
-  asset?: string
+  category: MaintenanceCategory
+  priority: MaintenancePriority
+  submittedBy: string
+  submittedById: string
+  createdAt: string
+  lastUpdated: string
+  approvalStatus: MaintenanceApprovalStatus
+  maintenanceStatus: MaintenanceStatus
+  approvalNote?: string
+  needsMoreInfo?: boolean
+  assignedTo?: string
   vendor?: string
+  vendorContact?: string
+  scheduledDate?: string
   estimatedCost?: number
-  invoiceFileNames: string[]
+  finalCost?: number
+  completedAt?: string
+  originalPhotos: MaintenanceAttachment[]
+  completionPhotos: MaintenanceAttachment[]
+  invoices: MaintenanceAttachment[]
+  assetName?: string
+  assetType?: string
   repeatIssueKey?: string
+  repeatRepairCount?: number
+  repeatRecordedCost?: number
+  archived: boolean
 }
 
 export interface SupplyRequestDraft {

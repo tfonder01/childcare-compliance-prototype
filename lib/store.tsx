@@ -1,13 +1,22 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback } from "react"
-import type { ComplianceRecord, Comment, ActivityEvent, Notification, Role, Location } from "./types"
+import type {
+  ComplianceRecord,
+  Comment,
+  ActivityEvent,
+  Notification,
+  Role,
+  Location,
+  MaintenanceRequest,
+} from "./types"
 import { ToastViewport, type ToastMessage } from "@/components/toast-viewport"
 import {
   RECORDS as INITIAL_RECORDS,
   COMMENTS as INITIAL_COMMENTS,
   ACTIVITY as INITIAL_ACTIVITY,
   NOTIFICATIONS as INITIAL_NOTIFICATIONS,
+  MAINTENANCE_REQUESTS as INITIAL_MAINTENANCE_REQUESTS,
   USERS,
   LOCATIONS,
 } from "./mock-data"
@@ -21,11 +30,21 @@ interface AppState {
   comments: Comment[]
   activity: ActivityEvent[]
   notifications: Notification[]
+  maintenanceRequests: MaintenanceRequest[]
   updateRecordStatus: (id: string, status: ComplianceRecord["status"]) => void
   archiveRecord: (id: string) => void
   restoreRecord: (id: string) => void
   addRecord: (record: ComplianceRecord) => void
   addComment: (comment: Comment) => void
+  addMaintenanceRequest: (request: MaintenanceRequest) => void
+  updateMaintenanceRequest: (id: string, updates: Partial<MaintenanceRequest>, detail?: string) => void
+  archiveMaintenanceRequest: (id: string) => void
+  restoreMaintenanceRequest: (id: string) => void
+  addMaintenanceFile: (
+    id: string,
+    field: "originalPhotos" | "completionPhotos" | "invoices",
+    fileName: string
+  ) => void
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
   unreadCount: number
@@ -40,6 +59,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS)
   const [activity, setActivity] = useState<ActivityEvent[]>(INITIAL_ACTIVITY)
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS)
+  const [allMaintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>(INITIAL_MAINTENANCE_REQUESTS)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const currentUser =
@@ -59,19 +79,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ? allRecords
       : allRecords.filter((record) => record.locationId === currentUser.locationId)
 
+  const maintenanceRequests =
+    role === "owner"
+      ? allMaintenanceRequests
+      : allMaintenanceRequests.filter((request) => request.locationId === currentUser.locationId)
+
   const visibleRecordIds = new Set(records.map((record) => record.id))
+  const visibleMaintenanceIds = new Set(maintenanceRequests.map((request) => request.id))
+  const isVisibleEntity = (id: string) => visibleRecordIds.has(id) || visibleMaintenanceIds.has(id)
   const visibleActivity =
     role === "owner"
       ? activity
-      : activity.filter((event) => visibleRecordIds.has(event.recordId))
+      : activity.filter((event) => isVisibleEntity(event.recordId))
   const visibleComments =
     role === "owner"
       ? comments
-      : comments.filter((comment) => visibleRecordIds.has(comment.recordId))
+      : comments.filter((comment) => isVisibleEntity(comment.recordId))
   const visibleNotifications =
     role === "owner"
       ? notifications
-      : notifications.filter((notification) => !notification.recordId || visibleRecordIds.has(notification.recordId))
+      : notifications.filter((notification) => !notification.recordId || isVisibleEntity(notification.recordId))
 
   const setRole = useCallback((r: Role) => setRoleState(r), [])
 
@@ -205,6 +232,136 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [currentUser, addActivityEvent, showToast]
   )
 
+  const addMaintenanceRequest = useCallback(
+    (request: MaintenanceRequest) => {
+      setMaintenanceRequests((prev) => [request, ...prev])
+      addActivityEvent({
+        recordId: request.id,
+        type: "created",
+        user: currentUser.name,
+        userId: currentUser.id,
+        role: currentUser.role,
+        timestamp: new Date().toISOString(),
+        detail: request.approvalStatus === "Awaiting Approval"
+          ? "Maintenance request submitted and sent for Owner approval."
+          : "Maintenance request submitted.",
+      })
+      setNotifications((prev) => [{
+        id: `mnotif_${Date.now()}`,
+        type: "maintenance",
+        title: request.approvalStatus === "Awaiting Approval" ? "Maintenance approval required" : "New maintenance request",
+        message: `${request.title} was submitted by ${request.submittedBy}.`,
+        timestamp: new Date().toISOString(),
+        recordId: request.id,
+        source: "maintenance",
+        isRead: false,
+      }, ...prev])
+      showToast("Maintenance request submitted")
+    },
+    [currentUser, addActivityEvent, showToast]
+  )
+
+  const updateMaintenanceRequest = useCallback(
+    (id: string, updates: Partial<MaintenanceRequest>, detail = "Maintenance request updated.") => {
+      setMaintenanceRequests((prev) => prev.map((request) =>
+        request.id === id
+          ? { ...request, ...updates, lastUpdated: new Date().toISOString() }
+          : request
+      ))
+      addActivityEvent({
+        recordId: id,
+        type: updates.maintenanceStatus || updates.approvalStatus ? "status_changed" : "edited",
+        user: currentUser.name,
+        userId: currentUser.id,
+        role: currentUser.role,
+        timestamp: new Date().toISOString(),
+        detail,
+      })
+      if (updates.approvalStatus || updates.maintenanceStatus === "Completed") {
+        setNotifications((prev) => [{
+          id: `mnotif_${Date.now()}`,
+          type: "maintenance",
+          title: updates.maintenanceStatus === "Completed" ? "Repair completed" : `Request ${String(updates.approvalStatus).toLowerCase()}`,
+          message: detail,
+          timestamp: new Date().toISOString(),
+          recordId: id,
+          source: "maintenance",
+          isRead: false,
+        }, ...prev])
+      }
+      showToast(detail)
+    },
+    [currentUser, addActivityEvent, showToast]
+  )
+
+  const archiveMaintenanceRequest = useCallback((id: string) => {
+    setMaintenanceRequests((prev) => prev.map((request) =>
+      request.id === id ? { ...request, archived: true, lastUpdated: new Date().toISOString() } : request
+    ))
+    addActivityEvent({
+      recordId: id,
+      type: "archived",
+      user: currentUser.name,
+      userId: currentUser.id,
+      role: currentUser.role,
+      timestamp: new Date().toISOString(),
+      detail: "Maintenance request archived.",
+    })
+    showToast("Maintenance request archived")
+  }, [currentUser, addActivityEvent, showToast])
+
+  const restoreMaintenanceRequest = useCallback((id: string) => {
+    setMaintenanceRequests((prev) => prev.map((request) =>
+      request.id === id ? { ...request, archived: false, lastUpdated: new Date().toISOString() } : request
+    ))
+    addActivityEvent({
+      recordId: id,
+      type: "restored",
+      user: currentUser.name,
+      userId: currentUser.id,
+      role: currentUser.role,
+      timestamp: new Date().toISOString(),
+      detail: "Maintenance request restored from archive.",
+    })
+    showToast("Maintenance request restored")
+  }, [currentUser, addActivityEvent, showToast])
+
+  const addMaintenanceFile = useCallback((
+    id: string,
+    field: "originalPhotos" | "completionPhotos" | "invoices",
+    fileName: string
+  ) => {
+    const attachment = { name: fileName, uploadedAt: new Date().toISOString(), uploadedBy: currentUser.name }
+    setMaintenanceRequests((prev) => prev.map((request) =>
+      request.id === id
+        ? { ...request, [field]: [...request[field], attachment], lastUpdated: new Date().toISOString() }
+        : request
+    ))
+    const label = field === "invoices" ? "Invoice" : field === "completionPhotos" ? "Completion photo" : "Photo"
+    addActivityEvent({
+      recordId: id,
+      type: "file_uploaded",
+      user: currentUser.name,
+      userId: currentUser.id,
+      role: currentUser.role,
+      timestamp: new Date().toISOString(),
+      detail: `${label} uploaded: ${fileName}.`,
+    })
+    if (field === "invoices") {
+      setNotifications((prev) => [{
+        id: `mnotif_${Date.now()}`,
+        type: "maintenance",
+        title: "Maintenance invoice uploaded",
+        message: `${currentUser.name} uploaded ${fileName}.`,
+        timestamp: new Date().toISOString(),
+        recordId: id,
+        source: "maintenance",
+        isRead: false,
+      }, ...prev])
+    }
+    showToast(`${label} attached`)
+  }, [currentUser, addActivityEvent, showToast])
+
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
   }, [])
@@ -226,11 +383,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         comments: visibleComments,
         activity: visibleActivity,
         notifications: visibleNotifications,
+        maintenanceRequests,
         updateRecordStatus,
         archiveRecord,
         restoreRecord,
         addRecord,
         addComment,
+        addMaintenanceRequest,
+        updateMaintenanceRequest,
+        archiveMaintenanceRequest,
+        restoreMaintenanceRequest,
+        addMaintenanceFile,
         markNotificationRead,
         markAllNotificationsRead,
         unreadCount,

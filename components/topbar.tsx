@@ -157,7 +157,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
                   n.recordId ? (
                     <DropdownMenuLinkItem
                       key={n.id}
-                      render={<Link href={`/records/${n.recordId}`} />}
+                      render={<Link href={n.source === "maintenance" ? `/maintenance/${n.recordId}` : `/records/${n.recordId}`} />}
                       className="flex-col items-start gap-0.5 px-3 py-2"
                       onClick={() => {
                         markNotificationRead(n.id)

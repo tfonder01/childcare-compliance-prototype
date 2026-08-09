@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { AlertCircle, CheckCircle2, ExternalLink } from "lucide-react"
+import { AlertCircle, CheckCircle2, ExternalLink, MessageSquareMore, Wrench } from "lucide-react"
 import { useApp } from "@/lib/store"
 import { LOCATIONS } from "@/lib/mock-data"
 import { StatusBadge } from "@/components/status-badge"
@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { getRecordWorkspace } from "@/lib/record-workspaces"
 import { WorkspaceBadge } from "@/components/workspace-badge"
+import { ApprovalStatusBadge, PriorityBadge } from "@/components/maintenance-badges"
 
 export default function NeedsReviewPage() {
-  const { records, updateRecordStatus, role } = useApp()
+  const { records, updateRecordStatus, role, maintenanceRequests, updateMaintenanceRequest } = useApp()
   const [now, setNow] = useState<number | null>(null)
   const [resolvingId, setResolvingId] = useState<string | null>(null)
 
@@ -36,6 +37,9 @@ export default function NeedsReviewPage() {
 
   const attentionCount = queue.filter((r) => r.status === "Needs Attention").length
   const newCount = queue.filter((r) => r.status === "New").length
+  const maintenanceQueue = role === "owner"
+    ? maintenanceRequests.filter((request) => !request.archived && (request.approvalStatus === "Awaiting Approval" || request.needsMoreInfo))
+    : []
 
   return (
     <div className="space-y-5">
@@ -49,7 +53,42 @@ export default function NeedsReviewPage() {
           <span className="h-2 w-2 rounded-full bg-blue-500" />
           <span className="text-sm font-medium text-blue-800">{newCount} New Uploads</span>
         </div>
+        {role === "owner" && (
+          <div className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 shadow-sm">
+            <Wrench className="h-4 w-4 text-orange-600" />
+            <span className="text-sm font-medium text-orange-800">{maintenanceQueue.length} Maintenance Actions</span>
+          </div>
+        )}
       </div>
+
+      {role === "owner" && maintenanceQueue.length > 0 && (
+        <div className="overflow-hidden rounded-xl border border-orange-200 bg-card shadow-sm">
+          <div className="flex items-center gap-3 border-b border-border bg-orange-50/45 px-5 py-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-700"><Wrench className="h-4 w-4" /></div>
+            <div><h2 className="text-sm font-semibold text-foreground">Maintenance requiring Owner action ({maintenanceQueue.length})</h2><p className="mt-0.5 text-xs text-muted-foreground">Approval requests and items needing more information are kept separate from compliance statuses.</p></div>
+          </div>
+          <div className="divide-y divide-border">
+            {maintenanceQueue.map((request) => {
+              const location = LOCATIONS.find((item) => item.id === request.locationId)
+              return (
+                <div key={request.id} className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-muted/35 lg:flex-row lg:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2"><span className="rounded-md bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">Maintenance</span><PriorityBadge priority={request.priority} /><ApprovalStatusBadge status={request.approvalStatus} /></div>
+                    <Link href={`/maintenance/${request.id}`} className="mt-2 block truncate text-sm font-semibold text-foreground hover:text-primary hover:underline">{request.title}</Link>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{location?.name} · {request.area} · Submitted by {request.submittedBy}</p>
+                    <p className="mt-1 text-xs text-amber-700">{request.needsMoreInfo ? "Additional information was requested." : "Owner approval is required before work proceeds."}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-600/90" onClick={() => updateMaintenanceRequest(request.id, { approvalStatus: "Approved", maintenanceStatus: request.maintenanceStatus === "Submitted" ? "Approved / Ready" : request.maintenanceStatus, needsMoreInfo: false, approvalNote: "Approved by Owner." }, "Owner approved the maintenance request.")}><CheckCircle2 className="h-3.5 w-3.5" />Approve</Button>
+                    <Button variant="outline" size="sm" className="gap-1.5 text-amber-700" onClick={() => updateMaintenanceRequest(request.id, { needsMoreInfo: true, approvalNote: "Owner requested more information before approval." }, "Owner requested more information.")}><MessageSquareMore className="h-3.5 w-3.5" />More info</Button>
+                    <Button render={<Link href={`/maintenance/${request.id}`} />} nativeButton={false} variant="ghost" size="icon" aria-label={`Open ${request.title}`}><ExternalLink className="h-4 w-4" /></Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Queue */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">

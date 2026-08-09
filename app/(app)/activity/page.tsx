@@ -30,7 +30,7 @@ const EVENT_CONFIG: Record<
 }
 
 export default function ActivityPage() {
-  const { activity, records } = useApp()
+  const { activity, records, maintenanceRequests } = useApp()
 
   const sorted = [...activity].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
 
@@ -64,8 +64,10 @@ export default function ActivityPage() {
               const config = EVENT_CONFIG[evt.type] ?? EVENT_CONFIG.created
               const Icon = config.icon
               const record = records.find((r) => r.id === evt.recordId)
-              const location = record
-                ? LOCATIONS.find((l) => l.id === record.locationId)
+              const maintenanceRequest = maintenanceRequests.find((request) => request.id === evt.recordId)
+              const entity = record ?? maintenanceRequest
+              const location = entity
+                ? LOCATIONS.find((l) => l.id === entity.locationId)
                 : null
               const isLast = i === events.length - 1
 
@@ -96,9 +98,17 @@ export default function ActivityPage() {
                             {record.title}
                           </Link>
                         )}
+                        {maintenanceRequest && (
+                          <Link
+                            href={`/maintenance/${maintenanceRequest.id}`}
+                            className="rounded-sm text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {maintenanceRequest.title}
+                          </Link>
+                        )}
                         {location && (
                           <p className="text-[11px] text-muted-foreground">
-                            {location.name} &middot; {record && getRecordWorkspace(record) === "operations" ? "Operations" : "Compliance"}
+                            {location.name} &middot; {maintenanceRequest ? "Maintenance" : record && getRecordWorkspace(record) === "operations" ? "Operations" : "Compliance"}
                           </p>
                         )}
                       </div>

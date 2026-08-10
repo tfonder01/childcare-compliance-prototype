@@ -13,14 +13,17 @@ function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 z-20 bg-black/40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close navigation menu"
         />
       )}
 
       {/* Sidebar — always visible on lg+, slide-in on mobile */}
       <div
+        id="mobile-sidebar"
         className={cn(
           "fixed inset-y-0 left-0 z-30 flex-shrink-0 transition-transform duration-200 lg:relative lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
@@ -30,7 +33,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
-        <Topbar onMenuClick={() => setSidebarOpen((o) => !o)} />
+        <Topbar onMenuClick={() => setSidebarOpen((o) => !o)} menuOpen={sidebarOpen} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="page-enter">{children}</div>
         </main>

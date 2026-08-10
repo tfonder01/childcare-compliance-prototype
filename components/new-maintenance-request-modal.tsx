@@ -187,8 +187,8 @@ export function NewMaintenanceRequestModal({ open, onOpenChange }: { open: boole
           </div>
 
           <DialogFooter className="m-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">Submit Request</Button>
+            <Button type="button" variant="outline" className="min-h-10 sm:min-h-8" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="min-h-10 sm:min-h-8">Submit Request</Button>
           </DialogFooter>
         </form>
       </DialogContent>

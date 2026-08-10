@@ -90,12 +90,12 @@ export interface Comment {
 
 export interface Notification {
   id: string
-  type: "upload" | "status_change" | "comment" | "attention" | "maintenance"
+  type: "upload" | "status_change" | "comment" | "attention" | "maintenance" | "supply"
   title: string
   message: string
   timestamp: string
   recordId?: string
-  source?: "records" | "maintenance"
+  source?: "records" | "maintenance" | "supply"
   isRead: boolean
 }
 
@@ -171,14 +171,60 @@ export interface MaintenanceRequest {
   repeatIssueKey?: string
   repeatRepairCount?: number
   repeatRecordedCost?: number
+  repeatRepairPeriodMonths?: number
   archived: boolean
 }
 
-export interface SupplyRequestDraft {
+export type SupplyCategory =
+  | "Classroom Supplies"
+  | "Furniture"
+  | "Fixtures"
+  | "Equipment"
+  | "Office Supplies"
+  | "Cleaning / Sanitation"
+  | "Safety"
+  | "Technology"
+  | "Replacement Item"
+  | "Other"
+
+export type SupplyPriority = MaintenancePriority
+export type SupplyApprovalStatus = MaintenanceApprovalStatus
+export type SupplyStatus = "Submitted" | "Ready to Order" | "Ordered" | "Received" | "Cancelled"
+
+export interface SupplyAttachment {
+  name: string
+  uploadedAt: string
+  uploadedBy: string
+}
+
+export interface SupplyRequest {
   id: string
   locationId: string
+  area?: string
   classroomAgeGroup?: ClassroomAgeGroup
+  category: SupplyCategory
+  itemName: string
+  description: string
+  quantity: number
+  quantityUnit?: string
+  unitCost?: number
+  estimatedTotal: number
+  finalTotal?: number
+  vendor?: string
+  productLink?: string
+  requestedAt: string
+  neededBy?: string
+  priority: SupplyPriority
+  approvalRequired: boolean
+  approvalStatus: SupplyApprovalStatus
+  fulfillmentStatus: SupplyStatus
+  approvalNote?: string
+  needsMoreInfo?: boolean
+  requestedBy: string
   requestedById: string
-  items: Array<{ name: string; quantity: number }>
-  status: "Draft" | "Submitted" | "Approved" | "Declined"
+  orderedAt?: string
+  receivedAt?: string
+  lastUpdated: string
+  photos: SupplyAttachment[]
+  archived: boolean
 }

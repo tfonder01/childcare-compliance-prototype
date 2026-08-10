@@ -253,7 +253,7 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] max-w-[calc(100%-1rem)] overflow-y-auto sm:max-w-lg">
         {submitted ? (
           <div className="flex flex-col items-center gap-4 py-8 text-center [animation:page-enter_200ms_ease-out_both]">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-100">
@@ -506,8 +506,8 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
-              <Button onClick={handleSubmit} disabled={!canSubmit} className="min-w-28">Upload Record</Button>
+              <Button variant="outline" className="min-h-10 sm:min-h-8" onClick={handleClose}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={!canSubmit} className="min-h-10 min-w-28 sm:min-h-8">Upload Record</Button>
             </DialogFooter>
           </>
         )}

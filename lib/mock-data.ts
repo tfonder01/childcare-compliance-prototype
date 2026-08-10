@@ -10,6 +10,8 @@ import type {
   MaintenanceRequest,
   MaintenanceCategory,
   OperationsRecordType,
+  SupplyRequest,
+  SupplyCategory,
 } from "./types"
 
 export const COMPLIANCE_CATEGORIES: ComplianceCategory[] = [
@@ -70,6 +72,31 @@ export const MAINTENANCE_VENDORS = [
   "Central Florida Plumbing",
   "BrightLine Electrical",
   "In-House Maintenance",
+] as const
+
+export const SUPPLY_CATEGORIES: SupplyCategory[] = [
+  "Classroom Supplies",
+  "Furniture",
+  "Fixtures",
+  "Equipment",
+  "Office Supplies",
+  "Cleaning / Sanitation",
+  "Safety",
+  "Technology",
+  "Replacement Item",
+  "Other",
+]
+
+export const SUPPLY_AREAS = [
+  ...CLASSROOM_AGE_GROUPS,
+  "Kitchen",
+  "Office",
+  "Lobby",
+  "Playground",
+  "Restroom",
+  "Storage",
+  "Whole Location",
+  "Other",
 ] as const
 
 export const USERS: User[] = [
@@ -443,6 +470,7 @@ export const MAINTENANCE_REQUESTS: MaintenanceRequest[] = [
     repeatIssueKey: "loc1-toddler-restroom-north-toilet",
     repeatRepairCount: 3,
     repeatRecordedCost: 740,
+    repeatRepairPeriodMonths: 12,
     archived: false,
   },
   {
@@ -576,7 +604,68 @@ export const MAINTENANCE_REQUESTS: MaintenanceRequest[] = [
 
 export const FUTURE_MAINTENANCE_INSIGHT = MAINTENANCE_REQUESTS[0]
 
+export const SUPPLY_REQUESTS: SupplyRequest[] = [
+  {
+    id: "supply1", locationId: "loc1", area: "Preschool", classroomAgeGroup: "Preschool",
+    category: "Replacement Item", itemName: "Preschool Classroom Rug Replacement",
+    description: "The current rug is torn along one edge and can no longer be secured safely. Photo attached for owner review.",
+    quantity: 1, unitCost: 425, estimatedTotal: 425, vendor: "Lakeshore Learning", requestedAt: "2025-08-09T09:15:00",
+    neededBy: "2025-08-20", priority: "High", approvalRequired: true, approvalStatus: "Awaiting Approval",
+    fulfillmentStatus: "Submitted", requestedBy: "Rachel Torres", requestedById: "u2", lastUpdated: "2025-08-09T09:15:00",
+    photos: [{ name: "preschool-rug-damage.jpg", uploadedAt: "2025-08-09T09:15:00", uploadedBy: "Rachel Torres" }], archived: false,
+  },
+  {
+    id: "supply2", locationId: "loc1", area: "Infant", classroomAgeGroup: "Infant",
+    category: "Classroom Supplies", itemName: "Infant Classroom Diapers — Monthly Supply",
+    description: "Monthly replenishment of classroom diaper supply.", quantity: 6, quantityUnit: "cases", unitCost: 51.67,
+    estimatedTotal: 310, vendor: "Costco Business", requestedAt: "2025-08-07T11:30:00", priority: "Normal",
+    approvalRequired: false, approvalStatus: "Not Required", fulfillmentStatus: "Ready to Order",
+    requestedBy: "Rachel Torres", requestedById: "u2", lastUpdated: "2025-08-08T08:40:00", photos: [], archived: false,
+  },
+  {
+    id: "supply3", locationId: "loc3", area: "Playground", category: "Equipment", itemName: "Playground Shade Canopy Replacement",
+    description: "Replacement canopy for the west play zone after wind damage.", quantity: 1, unitCost: 1850, estimatedTotal: 1850,
+    vendor: "Playground Outfitters", productLink: "https://example.com/shade-canopy", requestedAt: "2025-08-01T10:00:00",
+    priority: "High", approvalRequired: true, approvalStatus: "Approved", fulfillmentStatus: "Ordered",
+    requestedBy: "Priya Nair", requestedById: "u4", orderedAt: "2025-08-06T14:10:00", lastUpdated: "2025-08-06T14:10:00",
+    photos: [{ name: "damaged-shade-canopy.jpg", uploadedAt: "2025-08-01T10:00:00", uploadedBy: "Priya Nair" }], archived: false,
+  },
+  {
+    id: "supply4", locationId: "loc2", area: "Office", category: "Office Supplies", itemName: "Office Printer Toner",
+    description: "Black toner cartridges for the main office printer.", quantity: 4, unitCost: 65, estimatedTotal: 260,
+    finalTotal: 252, vendor: "Staples", requestedAt: "2025-07-28T08:30:00", priority: "Normal", approvalRequired: true,
+    approvalStatus: "Approved", fulfillmentStatus: "Received", requestedBy: "James Okafor", requestedById: "u3",
+    orderedAt: "2025-07-30T13:00:00", receivedAt: "2025-08-04T10:20:00", lastUpdated: "2025-08-04T10:20:00", photos: [], archived: false,
+  },
+  {
+    id: "supply5", locationId: "loc2", area: "Toddler", classroomAgeGroup: "Toddler", category: "Furniture",
+    itemName: "Toddler Classroom Chairs", description: "Eight replacement chairs for cracked and unstable classroom seating.",
+    quantity: 8, unitCost: 85, estimatedTotal: 680, vendor: "Community Playthings", requestedAt: "2025-08-08T15:45:00",
+    priority: "High", approvalRequired: true, approvalStatus: "Awaiting Approval", fulfillmentStatus: "Submitted",
+    requestedBy: "Morgan Ellis", requestedById: "u5", lastUpdated: "2025-08-08T15:45:00",
+    photos: [{ name: "toddler-chair-damage.jpg", uploadedAt: "2025-08-08T15:45:00", uploadedBy: "Morgan Ellis" }], archived: false,
+  },
+  {
+    id: "supply6", locationId: "loc1", area: "Storage", category: "Cleaning / Sanitation", itemName: "Disposable Gloves Restock",
+    description: "Received monthly glove restock; retained for spend history.", quantity: 10, quantityUnit: "boxes", unitCost: 14,
+    estimatedTotal: 140, finalTotal: 140, vendor: "HD Supply", requestedAt: "2025-07-20T09:00:00", priority: "Normal",
+    approvalRequired: false, approvalStatus: "Not Required", fulfillmentStatus: "Received", requestedBy: "Rachel Torres", requestedById: "u2",
+    orderedAt: "2025-07-21T09:00:00", receivedAt: "2025-07-24T12:00:00", lastUpdated: "2025-07-30T12:00:00", photos: [], archived: true,
+  },
+]
+
+// Prototype-only reporting hooks; no analytics UI is included in this sprint.
+export const FUTURE_SUPPLY_ANALYTICS_FIELDS = ["locationId", "area", "category", "quantity", "unitCost", "estimatedTotal", "finalTotal", "vendor", "requestedAt", "orderedAt", "receivedAt"] as const
+
 export const ACTIVITY: ActivityEvent[] = [
+  { id: "sact8", recordId: "supply4", type: "status_changed", user: "James Okafor", userId: "u3", role: "director", timestamp: "2025-08-04T10:20:00", detail: "Item received: Office Printer Toner." },
+  { id: "sact7", recordId: "supply3", type: "status_changed", user: "Sandra Mitchell", userId: "u1", role: "owner", timestamp: "2025-08-06T14:10:00", detail: "Item ordered: Playground Shade Canopy Replacement." },
+  { id: "sact6", recordId: "supply3", type: "status_changed", user: "Sandra Mitchell", userId: "u1", role: "owner", timestamp: "2025-08-03T09:00:00", detail: "Owner approved supply request." },
+  { id: "sact5", recordId: "supply5", type: "file_uploaded", user: "Morgan Ellis", userId: "u5", role: "assistant_director", timestamp: "2025-08-08T15:46:00", detail: "Photo attached: toddler-chair-damage.jpg." },
+  { id: "sact4", recordId: "supply5", type: "created", user: "Morgan Ellis", userId: "u5", role: "assistant_director", timestamp: "2025-08-08T15:45:00", detail: "Supply request submitted for Owner approval." },
+  { id: "sact3", recordId: "supply2", type: "status_changed", user: "Rachel Torres", userId: "u2", role: "director", timestamp: "2025-08-08T08:40:00", detail: "Request marked Ready to Order." },
+  { id: "sact2", recordId: "supply1", type: "file_uploaded", user: "Rachel Torres", userId: "u2", role: "director", timestamp: "2025-08-09T09:16:00", detail: "Photo attached: preschool-rug-damage.jpg." },
+  { id: "sact1", recordId: "supply1", type: "created", user: "Rachel Torres", userId: "u2", role: "director", timestamp: "2025-08-09T09:15:00", detail: "Supply request submitted for Owner approval." },
   {
     id: "mact6",
     recordId: "maint1",

@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ApprovalStatusBadge, MaintenanceStatusBadge, PriorityBadge, RepeatIssueBadge } from "@/components/maintenance-badges"
 import { cn } from "@/lib/utils"
+import { hasPotentialRepeatHistory } from "@/lib/maintenance-history"
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 const fieldClass = "h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/30"
@@ -87,6 +88,7 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
   const requestComments = comments.filter((comment) => comment.recordId === id).sort((a, b) => a.timestamp.localeCompare(b.timestamp))
   const requestActivity = activity.filter((event) => event.recordId === id).sort((a, b) => b.timestamp.localeCompare(a.timestamp))
   const canEdit = !request.archived && request.approvalStatus !== "Declined"
+  const potentialRepeatIssue = hasPotentialRepeatHistory(request)
   const progressSteps = ["Submitted", "Approved / Ready", "In Progress", "Completed"] as const
   const progressStopped = request.approvalStatus === "Declined" || request.maintenanceStatus === "Cancelled"
   const progressIndex = request.approvalStatus === "Awaiting Approval" || request.approvalStatus === "Declined"
@@ -149,7 +151,7 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
         <div className="border-b border-border p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Maintenance request</span>{request.repeatRepairCount && request.repeatRepairCount > 1 ? <RepeatIssueBadge /> : null}</div>
+              <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold uppercase tracking-wide text-blue-700">Maintenance request</span>{potentialRepeatIssue ? <RepeatIssueBadge /> : null}</div>
               <h1 className="mt-2 text-xl font-semibold leading-tight text-foreground sm:text-2xl">{request.title}</h1>
               <p className="mt-2 text-sm text-muted-foreground">Request {request.id} · Last updated {new Date(request.lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
             </div>
@@ -205,15 +207,15 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
         </div>
       </section>
 
-      {request.repeatRepairCount && request.repeatRepairCount > 1 && (
+      {potentialRepeatIssue && (
         <section className="rounded-xl border border-orange-200 bg-orange-50/45 p-4 shadow-sm">
-          <div className="flex gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-700"><AlertTriangle className="h-4.5 w-4.5" /></div><div><p className="text-sm font-semibold text-foreground">Repeat issue: {request.assetName}</p><p className="mt-1 text-sm text-muted-foreground">{request.repeatRepairCount} repairs in the last 12 months · Total recorded cost: <span className="font-semibold text-foreground">{money.format(request.repeatRecordedCost ?? 0)}</span></p><p className="mt-1 text-xs text-muted-foreground">Tracked with repeat key <span className="font-mono">{request.repeatIssueKey}</span> for future maintenance analytics.</p></div></div>
+          <div className="flex gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-700"><AlertTriangle className="h-4.5 w-4.5" /></div><div><p className="text-sm font-semibold text-foreground">Potential repeat issue · {request.assetName}</p><p className="mt-1 text-sm text-muted-foreground">{request.repeatRepairCount} repairs recorded in the last {request.repeatRepairPeriodMonths} months · <span className="font-semibold text-foreground">{money.format(request.repeatRecordedCost ?? 0)}</span> total recorded repair cost</p><p className="mt-1 text-xs text-muted-foreground">Based on prior maintenance records for this item and area.</p></div></div>
         </section>
       )}
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="contents lg:col-span-2 lg:block lg:space-y-5">
+          <section className="order-1 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Request details</h2>
             <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-5 sm:grid-cols-3">
               <Meta icon={MapPin} label="Location">{location?.name ?? "—"}</Meta>
@@ -227,7 +229,7 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
             {request.approvalNote && <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/55 p-3"><p className="text-xs font-semibold text-amber-800">Approval note</p><p className="mt-1 text-sm text-foreground">{request.approvalNote}</p></div>}
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <section className="order-4 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold text-foreground">Photos and invoices</h2><p className="mt-0.5 text-xs text-muted-foreground">Prototype attachments preserve filenames and upload history.</p></div></div>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               {[
@@ -244,16 +246,16 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <section className="order-6 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Comments and notes <span className="font-normal text-muted-foreground">({requestComments.length})</span></h2>
             <div className="mt-4 space-y-4">{requestComments.map((comment) => <div key={comment.id} className="flex gap-3"><div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold", comment.role === "owner" ? "bg-violet-100 text-violet-700" : "bg-teal-100 text-teal-700")}>{comment.user.split(" ").map((part) => part[0]).join("")}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-baseline gap-2"><span className="text-sm font-medium text-foreground">{comment.user}</span><span className="text-[10px] capitalize text-muted-foreground">{comment.role.replace("_", " ")}</span><span className="ml-auto text-[10px] text-muted-foreground">{new Date(comment.timestamp).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span></div><p className="mt-1 rounded-lg bg-muted/40 px-3.5 py-3 text-sm leading-relaxed text-foreground">{comment.text}</p></div></div>)}{requestComments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}</div>
             {canEdit && <div className="mt-4 flex gap-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{currentUser.initials}</div><div className="flex-1"><Textarea rows={3} value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Add a progress update, question, or note…" /><Button size="sm" className="mt-2 gap-1.5" onClick={addRequestComment} disabled={!commentText.trim()}><Send className="h-3.5 w-3.5" />Add comment</Button></div></div>}
           </section>
         </div>
 
-        <aside className="space-y-5">
+        <aside className="contents lg:block lg:space-y-5">
           {role === "owner" && !request.archived && (
-            <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <section className="order-2 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
               <h2 className="text-sm font-semibold text-foreground">Owner approval</h2>
               <p className="mt-1 text-xs text-muted-foreground">Approval is separate from repair progress.</p>
               <div className="mt-3 space-y-2">
@@ -264,7 +266,7 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
             </section>
           )}
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <section className="order-3 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Repair progress</h2>
             <div className="mt-3 grid gap-2">
               <Button variant="outline" size="sm" className="justify-start gap-2" onClick={() => updateStatus("In Progress")} disabled={!canEdit || request.maintenanceStatus === "In Progress"}><PlayCircle className="h-4 w-4 text-indigo-600" />Mark In Progress</Button>
@@ -273,7 +275,7 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <section className="order-5 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Vendor, assignment and cost</h2>
             <div className="mt-4 space-y-3">
               <div className="space-y-1.5"><Label htmlFor="assigned-to">Assigned To</Label><Input id="assigned-to" value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)} placeholder="Person or team" disabled={!canEdit} /></div>
@@ -286,13 +288,13 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
             <div className="mt-4 grid grid-cols-2 gap-2 border-t border-border pt-4"><div className="rounded-lg bg-muted/40 p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Estimated</p><p className="mt-1 text-sm font-semibold tabular-nums">{request.estimatedCost != null ? money.format(request.estimatedCost) : "—"}</p></div><div className="rounded-lg bg-muted/40 p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Final</p><p className="mt-1 text-sm font-semibold tabular-nums">{request.finalCost != null ? money.format(request.finalCost) : "—"}</p></div></div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <section className="order-7 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Activity timeline</h2>
             <div className="mt-4 space-y-4">{requestActivity.map((event, index) => { const Icon = timelineIcons[event.type] ?? Clock3; return <div key={event.id} className="relative flex gap-3">{index < requestActivity.length - 1 && <span className="absolute left-3.5 top-7 h-full w-px bg-border" />}<span className="z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card"><Icon className="h-3 w-3 text-muted-foreground" /></span><div className="pb-1"><p className="text-xs font-medium leading-snug text-foreground">{event.detail}</p><p className="mt-1 text-[10px] text-muted-foreground">{event.user} · {new Date(event.timestamp).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p></div></div>})}</div>
           </section>
 
           {role === "owner" && (
-            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <section className="order-8 rounded-xl border border-border bg-card p-4 shadow-sm">
               {request.archived ? <Button variant="outline" className="w-full justify-start gap-2" onClick={() => restoreMaintenanceRequest(id)}><RotateCcw className="h-4 w-4" />Restore request</Button> : <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => { archiveMaintenanceRequest(id); router.push("/archived") }}><Archive className="h-4 w-4" />Archive request</Button>}
               <p className="mt-2 text-[11px] text-muted-foreground">No permanent delete. Repair history remains intact.</p>
             </section>

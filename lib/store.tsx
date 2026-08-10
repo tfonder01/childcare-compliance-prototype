@@ -9,6 +9,7 @@ import type {
   Role,
   Location,
   MaintenanceRequest,
+  SupplyRequest,
 } from "./types"
 import { ToastViewport, type ToastMessage } from "@/components/toast-viewport"
 import {
@@ -17,6 +18,7 @@ import {
   ACTIVITY as INITIAL_ACTIVITY,
   NOTIFICATIONS as INITIAL_NOTIFICATIONS,
   MAINTENANCE_REQUESTS as INITIAL_MAINTENANCE_REQUESTS,
+  SUPPLY_REQUESTS as INITIAL_SUPPLY_REQUESTS,
   USERS,
   LOCATIONS,
 } from "./mock-data"
@@ -31,6 +33,7 @@ interface AppState {
   activity: ActivityEvent[]
   notifications: Notification[]
   maintenanceRequests: MaintenanceRequest[]
+  supplyRequests: SupplyRequest[]
   updateRecordStatus: (id: string, status: ComplianceRecord["status"]) => void
   archiveRecord: (id: string) => void
   restoreRecord: (id: string) => void
@@ -45,6 +48,11 @@ interface AppState {
     field: "originalPhotos" | "completionPhotos" | "invoices",
     fileName: string
   ) => void
+  addSupplyRequest: (request: SupplyRequest) => void
+  updateSupplyRequest: (id: string, updates: Partial<SupplyRequest>, detail?: string) => void
+  archiveSupplyRequest: (id: string) => void
+  restoreSupplyRequest: (id: string) => void
+  addSupplyPhoto: (id: string, fileName: string) => void
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
   unreadCount: number
@@ -60,6 +68,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activity, setActivity] = useState<ActivityEvent[]>(INITIAL_ACTIVITY)
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS)
   const [allMaintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>(INITIAL_MAINTENANCE_REQUESTS)
+  const [allSupplyRequests, setSupplyRequests] = useState<SupplyRequest[]>(INITIAL_SUPPLY_REQUESTS)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const currentUser =
@@ -84,9 +93,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ? allMaintenanceRequests
       : allMaintenanceRequests.filter((request) => request.locationId === currentUser.locationId)
 
+  const supplyRequests = role === "owner"
+    ? allSupplyRequests
+    : allSupplyRequests.filter((request) => request.locationId === currentUser.locationId)
+
   const visibleRecordIds = new Set(records.map((record) => record.id))
   const visibleMaintenanceIds = new Set(maintenanceRequests.map((request) => request.id))
-  const isVisibleEntity = (id: string) => visibleRecordIds.has(id) || visibleMaintenanceIds.has(id)
+  const visibleSupplyIds = new Set(supplyRequests.map((request) => request.id))
+  const isVisibleEntity = (id: string) => visibleRecordIds.has(id) || visibleMaintenanceIds.has(id) || visibleSupplyIds.has(id)
   const visibleActivity =
     role === "owner"
       ? activity
@@ -362,6 +376,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     showToast(`${label} attached`)
   }, [currentUser, addActivityEvent, showToast])
 
+  const addSupplyRequest = useCallback((request: SupplyRequest) => {
+    setSupplyRequests((prev) => [request, ...prev])
+    addActivityEvent({
+      recordId: request.id, type: "created", user: currentUser.name, userId: currentUser.id,
+      role: currentUser.role, timestamp: new Date().toISOString(),
+      detail: request.approvalStatus === "Awaiting Approval" ? "Supply request submitted for Owner approval." : "Supply request submitted.",
+    })
+    setNotifications((prev) => [{
+      id: `snotif_${Date.now()}`, type: "supply", title: request.approvalRequired ? "Supply approval required" : "New supply request",
+      message: `${request.itemName} was requested by ${request.requestedBy}.`, timestamp: new Date().toISOString(),
+      recordId: request.id, source: "supply", isRead: false,
+    }, ...prev])
+    showToast("Supply request submitted")
+  }, [currentUser, addActivityEvent, showToast])
+
+  const updateSupplyRequest = useCallback((id: string, updates: Partial<SupplyRequest>, detail = "Supply request updated.") => {
+    setSupplyRequests((prev) => prev.map((request) => request.id === id
+      ? { ...request, ...updates, lastUpdated: new Date().toISOString() }
+      : request))
+    addActivityEvent({
+      recordId: id, type: updates.fulfillmentStatus || updates.approvalStatus ? "status_changed" : "edited",
+      user: currentUser.name, userId: currentUser.id, role: currentUser.role, timestamp: new Date().toISOString(), detail,
+    })
+    if (updates.approvalStatus || updates.fulfillmentStatus) {
+      setNotifications((prev) => [{
+        id: `snotif_${Date.now()}`, type: "supply", title: "Supply request updated", message: detail,
+        timestamp: new Date().toISOString(), recordId: id, source: "supply", isRead: false,
+      }, ...prev])
+    }
+    showToast(detail)
+  }, [currentUser, addActivityEvent, showToast])
+
+  const archiveSupplyRequest = useCallback((id: string) => {
+    setSupplyRequests((prev) => prev.map((request) => request.id === id ? { ...request, archived: true, lastUpdated: new Date().toISOString() } : request))
+    addActivityEvent({ recordId: id, type: "archived", user: currentUser.name, userId: currentUser.id, role: currentUser.role, timestamp: new Date().toISOString(), detail: "Supply request archived." })
+    showToast("Supply request archived")
+  }, [currentUser, addActivityEvent, showToast])
+
+  const restoreSupplyRequest = useCallback((id: string) => {
+    setSupplyRequests((prev) => prev.map((request) => request.id === id ? { ...request, archived: false, lastUpdated: new Date().toISOString() } : request))
+    addActivityEvent({ recordId: id, type: "restored", user: currentUser.name, userId: currentUser.id, role: currentUser.role, timestamp: new Date().toISOString(), detail: "Supply request restored from archive." })
+    showToast("Supply request restored")
+  }, [currentUser, addActivityEvent, showToast])
+
+  const addSupplyPhoto = useCallback((id: string, fileName: string) => {
+    const attachment = { name: fileName, uploadedAt: new Date().toISOString(), uploadedBy: currentUser.name }
+    setSupplyRequests((prev) => prev.map((request) => request.id === id ? { ...request, photos: [...request.photos, attachment], lastUpdated: attachment.uploadedAt } : request))
+    addActivityEvent({ recordId: id, type: "file_uploaded", user: currentUser.name, userId: currentUser.id, role: currentUser.role, timestamp: attachment.uploadedAt, detail: `Photo attached: ${fileName}.` })
+    showToast("Photo attached")
+  }, [currentUser, addActivityEvent, showToast])
+
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
   }, [])
@@ -384,6 +449,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         activity: visibleActivity,
         notifications: visibleNotifications,
         maintenanceRequests,
+        supplyRequests,
         updateRecordStatus,
         archiveRecord,
         restoreRecord,
@@ -394,6 +460,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         archiveMaintenanceRequest,
         restoreMaintenanceRequest,
         addMaintenanceFile,
+        addSupplyRequest,
+        updateSupplyRequest,
+        archiveSupplyRequest,
+        restoreSupplyRequest,
+        addSupplyPhoto,
         markNotificationRead,
         markAllNotificationsRead,
         unreadCount,

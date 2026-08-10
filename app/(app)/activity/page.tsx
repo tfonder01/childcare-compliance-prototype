@@ -30,7 +30,7 @@ const EVENT_CONFIG: Record<
 }
 
 export default function ActivityPage() {
-  const { activity, records, maintenanceRequests } = useApp()
+  const { activity, records, maintenanceRequests, supplyRequests } = useApp()
 
   const sorted = [...activity].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
 
@@ -65,7 +65,8 @@ export default function ActivityPage() {
               const Icon = config.icon
               const record = records.find((r) => r.id === evt.recordId)
               const maintenanceRequest = maintenanceRequests.find((request) => request.id === evt.recordId)
-              const entity = record ?? maintenanceRequest
+              const supplyRequest = supplyRequests.find((request) => request.id === evt.recordId)
+              const entity = record ?? maintenanceRequest ?? supplyRequest
               const location = entity
                 ? LOCATIONS.find((l) => l.id === entity.locationId)
                 : null
@@ -106,9 +107,10 @@ export default function ActivityPage() {
                             {maintenanceRequest.title}
                           </Link>
                         )}
+                        {supplyRequest && <Link href={`/supply-requests/${supplyRequest.id}`} className="rounded-sm text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{supplyRequest.itemName}</Link>}
                         {location && (
                           <p className="text-[11px] text-muted-foreground">
-                            {location.name} &middot; {maintenanceRequest ? "Maintenance" : record && getRecordWorkspace(record) === "operations" ? "Operations" : "Compliance"}
+                            {location.name} &middot; {supplyRequest ? "Supply Request" : maintenanceRequest ? "Maintenance" : record && getRecordWorkspace(record) === "operations" ? "Operations" : "Compliance"}
                           </p>
                         )}
                       </div>

@@ -38,7 +38,7 @@ const ROLE_LABELS = {
   assistant_director: "Assistant Director",
 } as const
 
-export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
+export function Topbar({ onMenuClick, menuOpen = false }: { onMenuClick?: () => void; menuOpen?: boolean }) {
   const { role, setRole, currentUser, notifications, unreadCount, markAllNotificationsRead, markNotificationRead } =
     useApp()
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -63,8 +63,10 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           {onMenuClick && (
             <button
               onClick={onMenuClick}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
               aria-label="Toggle menu"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-sidebar"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -84,7 +86,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
                   role === "owner" ? "bg-violet-500" : role === "director" ? "bg-emerald-500" : "bg-blue-500"
                 )}
               />
-              <span className="hidden sm:inline">View as: </span>{ROLE_LABELS[role]}
+              <span className="hidden sm:inline">View as: </span><span className="max-[430px]:sr-only">{ROLE_LABELS[role]}</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">

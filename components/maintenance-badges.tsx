@@ -40,5 +40,12 @@ export function PriorityBadge({ priority, className }: { priority: MaintenancePr
 }
 
 export function RepeatIssueBadge({ className }: { className?: string }) {
-  return <span className={cn(base, "border-orange-200 bg-orange-50/45 text-orange-700", className)}>Repeat issue</span>
+  return (
+    <span
+      className={cn(base, "border-orange-200 bg-orange-50/45 text-orange-700", className)}
+      title="Based on prior maintenance records for this item or area."
+    >
+      Potential repeat issue
+    </span>
+  )
 }

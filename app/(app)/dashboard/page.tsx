@@ -11,6 +11,7 @@ import {
   MapPin,
   ClipboardCheck,
   Wrench,
+  Package,
 } from "lucide-react"
 import { useApp } from "@/lib/store"
 import { COMPLIANCE_CATEGORIES } from "@/lib/mock-data"
@@ -35,7 +36,7 @@ function StatCard({
   return (
     <Link
       href={href}
-      className="interactive-card group flex min-h-32 flex-col gap-3 rounded-xl border bg-card p-5"
+      className="interactive-card group flex min-h-28 min-w-0 flex-col gap-3 rounded-xl border bg-card p-4 sm:min-h-32 sm:p-5"
     >
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -49,7 +50,7 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { records, activity, role, locations, maintenanceRequests } = useApp()
+  const { records, activity, role, locations, maintenanceRequests, supplyRequests } = useApp()
   const [now, setNow] = useState<number | null>(null)
   useEffect(() => { setNow(Date.now()) }, [])
 
@@ -60,6 +61,8 @@ export default function DashboardPage() {
     request.approvalStatus === "Awaiting Approval" || request.needsMoreInfo || ["Submitted", "Waiting"].includes(request.maintenanceStatus)
   )
   const maintenanceAwaitingApproval = activeMaintenance.filter((request) => request.approvalStatus === "Awaiting Approval")
+  const activeSupply = supplyRequests.filter((request) => !request.archived)
+  const supplyAwaitingApproval = activeSupply.filter((request) => request.approvalStatus === "Awaiting Approval")
   const newUploads = records.filter((r) => r.status === "New").length
   const needsAttention = records.filter((r) => r.status === "Needs Attention").length
   // Use the most recent month present in the data as "current month"
@@ -113,9 +116,9 @@ export default function DashboardPage() {
       ]
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-w-0 flex-col gap-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="order-1 grid min-w-0 grid-cols-1 gap-3 min-[390px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard
           label="New Uploads"
           value={newUploads}
@@ -146,7 +149,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <section className="overflow-hidden rounded-xl border border-violet-200/70 bg-card shadow-sm">
+      <section className="order-3 min-w-0 overflow-hidden rounded-xl border border-violet-200/70 bg-card shadow-sm lg:order-2">
         <div className="flex flex-col gap-3 border-b border-border bg-violet-50/45 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
@@ -163,8 +166,8 @@ export default function DashboardPage() {
           {auditMetrics.map((metric) => {
             const progress = Math.round((metric.reviewed / metric.required) * 100)
             return (
-              <div key={metric.label} className="bg-card p-5">
-                <div className="flex items-center justify-between">
+              <div key={metric.label} className="min-w-0 bg-card p-4 sm:p-5">
+                <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-semibold text-foreground">{metric.label}</p>
                   <span className="text-xs font-medium text-emerald-700">{metric.reviewed} of {metric.required} reviewed</span>
                 </div>
@@ -190,10 +193,10 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="contents lg:order-3 lg:grid lg:grid-cols-3 lg:gap-6">
         {/* Recent Uploads */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="contents lg:col-span-2 lg:block lg:space-y-4">
+          <div className="order-4 min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">Recent Uploads</h2>
               <Link
@@ -210,7 +213,7 @@ export default function DashboardPage() {
                   <Link
                     key={rec.id}
                     href={`/records/${rec.id}`}
-                    className="interactive-row flex items-start gap-3 px-5 py-3.5"
+                    className="interactive-row flex min-w-0 items-start gap-3 px-4 py-3.5 sm:px-5"
                   >
                     <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
@@ -235,7 +238,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Needs Review Queue */}
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="order-2 min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">Needs Review</h2>
               <Link
@@ -261,7 +264,7 @@ export default function DashboardPage() {
                     <Link
                       key={rec.id}
                       href={`/records/${rec.id}`}
-                      className="interactive-row flex items-start gap-3 px-5 py-3.5"
+                      className="interactive-row flex min-w-0 items-start gap-3 px-4 py-3.5 sm:px-5"
                     >
                       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-50">
                         <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
@@ -287,9 +290,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Right column */}
-        <div className="space-y-4">
+        <div className="contents lg:block lg:space-y-4">
           {/* Recent Activity */}
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="order-5 min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">Recent Activity</h2>
               <Link
@@ -318,7 +321,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Records by Location */}
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="order-6 min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">By Location</h2>
             </div>
@@ -352,7 +355,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Records by Category */}
-          <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="order-7 min-w-0 rounded-xl border border-border bg-card shadow-sm">
             <div className="border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold text-foreground">By Category</h2>
             </div>
@@ -363,8 +366,8 @@ export default function DashboardPage() {
                   href={`/records?category=${encodeURIComponent(category)}`}
                   className="interactive-row -mx-2 flex items-center justify-between gap-2 rounded-md px-2 py-1"
                 >
-                  <CategoryBadge category={category} className="text-[11px]" />
-                  <span className="text-xs font-medium text-muted-foreground">{count}</span>
+                  <CategoryBadge category={category} className="min-w-0 max-w-[calc(100%-2rem)] truncate text-[11px]" />
+                  <span className="shrink-0 text-xs font-medium text-muted-foreground">{count}</span>
                 </Link>
               ))}
             </div>
@@ -372,14 +375,14 @@ export default function DashboardPage() {
 
           <Link
             href="/operations"
-            className="interactive-card block rounded-xl border border-blue-200/70 bg-card p-5"
+            className="interactive-card order-8 block min-w-0 rounded-xl border border-blue-200/70 bg-card p-4 sm:p-5"
           >
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Operations Records</p>
                 <p className="mt-1 text-2xl font-bold text-foreground">{operationsRecords.length}</p>
               </div>
-              <div className="text-right text-[11px] text-muted-foreground">
+              <div className="text-[11px] text-muted-foreground sm:text-right">
                 <p>{operationsRecords.filter((record) => record.status === "New").length} new</p>
                 <p>{operationsRecords.filter((record) => record.status === "Needs Attention").length} need attention</p>
               </div>
@@ -387,17 +390,18 @@ export default function DashboardPage() {
             <p className="mt-3 text-xs text-muted-foreground">Recurring checklists and operational documentation</p>
           </Link>
 
-          <Link href="/maintenance" className="interactive-card block rounded-xl border border-orange-200/70 bg-card p-5">
+          <Link href="/maintenance" className="interactive-card order-9 block min-w-0 rounded-xl border border-orange-200/70 bg-card p-4 sm:p-5">
               <div className="flex items-center gap-2 text-orange-700">
                 <Wrench className="h-4 w-4" />
                 <p className="text-xs font-semibold uppercase tracking-wide">Maintenance</p>
               </div>
-              <div className="mt-3 flex items-end justify-between gap-3">
+              <div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div><p className="text-2xl font-bold text-foreground">{maintenanceAttention.length}</p><p className="text-xs text-muted-foreground">need attention</p></div>
-                <div className="text-right"><p className="text-sm font-semibold text-amber-700">{maintenanceAwaitingApproval.length}</p><p className="text-[11px] text-muted-foreground">awaiting approval</p></div>
+                <div className="sm:text-right"><p className="text-sm font-semibold text-amber-700">{maintenanceAwaitingApproval.length}</p><p className="text-[11px] text-muted-foreground">awaiting approval</p></div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">Open requests, approvals, and recent repair activity</p>
           </Link>
+          <Link href="/supply-requests" className="interactive-card order-10 block min-w-0 rounded-xl border border-teal-200/70 bg-card p-4 sm:p-5"><div className="flex items-center gap-2 text-teal-700"><Package className="h-4 w-4" /><p className="text-xs font-semibold uppercase tracking-wide">Supply Requests</p></div><div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-2xl font-bold text-foreground">{activeSupply.filter((request) => !["Received", "Cancelled"].includes(request.fulfillmentStatus)).length}</p><p className="text-xs text-muted-foreground">open requests</p></div><div className="sm:text-right"><p className="text-sm font-semibold text-amber-700">{supplyAwaitingApproval.length}</p><p className="text-[11px] text-muted-foreground">awaiting approval</p></div></div><p className="mt-3 text-xs text-muted-foreground">Lightweight supply ordering and receipt visibility</p></Link>
         </div>
       </div>
     </div>

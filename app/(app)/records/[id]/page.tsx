@@ -85,7 +85,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
   const backHref = operationsRecord ? "/operations" : "/records"
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto min-w-0 max-w-5xl space-y-6">
       {/* Back */}
       <Link
         href={backHref}
@@ -97,18 +97,18 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main content */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           {/* Header card */}
-          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg font-semibold text-foreground leading-snug">{record.title}</h1>
+                <h1 className="break-words text-lg font-semibold leading-snug text-foreground">{record.title}</h1>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <StatusBadge status={record.status} />
                   <WorkspaceBadge workspace={getRecordWorkspace(record)} />
                   {record.category !== "Operations" && <CategoryBadge category={record.category} />}
                   {operationsRecord && record.recordType && (
-                    <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                    <span className="inline-flex max-w-full items-center whitespace-normal rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-left text-xs font-medium text-blue-700">
                       {record.recordType}
                     </span>
                   )}
@@ -122,7 +122,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
             </div>
 
             {/* Meta grid */}
-            <dl className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <dl className="mt-5 grid grid-cols-1 gap-4 min-[390px]:grid-cols-2 sm:grid-cols-3 [&>div]:min-w-0 [&_dd]:break-words">
               <div>
                 <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <MapPin className="h-3 w-3" />
@@ -197,7 +197,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                 </dd>
               </div>
               {record.relatedRef && (
-                <div className="col-span-2">
+                <div className="min-[390px]:col-span-2">
                   <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     <Tag className="h-3 w-3" />
                     Related Ref
@@ -210,26 +210,28 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
             {record.description && (
               <div className="mt-5 rounded-lg bg-muted/40 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</p>
-                <p className="mt-1.5 text-sm text-foreground leading-relaxed">{record.description}</p>
+                <p className="mt-1.5 break-words text-sm leading-relaxed text-foreground">{record.description}</p>
               </div>
             )}
           </div>
 
           {/* Attached Files */}
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Attached Documents</h2>
             <div className="mt-3 space-y-2">
               {record.fileNames.map((name) => (
                 <div
                   key={name}
-                  className="group flex items-center gap-3 rounded-lg border border-border bg-muted/25 px-4 py-3 transition-[background-color,border-color,box-shadow] duration-150 hover:border-primary/20 hover:bg-muted/50 hover:shadow-sm"
+                  className="group flex min-w-0 flex-col items-stretch gap-3 rounded-lg border border-border bg-muted/25 px-3 py-3 transition-[background-color,border-color,box-shadow] duration-150 hover:border-primary/20 hover:bg-muted/50 hover:shadow-sm sm:flex-row sm:items-center sm:px-4"
                 >
-                  <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-                  <span className="flex-1 text-sm text-foreground">{name}</span>
+                  <div className="flex min-w-0 items-start gap-3 sm:flex-1 sm:items-center">
+                    <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 break-words text-sm text-foreground">{name}</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => showToast(`Download ready: ${name}`)}
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-h-10 w-full shrink-0 items-center justify-center gap-1 rounded-md px-3 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:w-auto sm:px-2 sm:py-1"
                   >
                     <Download className="h-3.5 w-3.5" />
                     Download
@@ -238,14 +240,14 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
               ))}
             </div>
             {role !== "owner" && !isArchived && (
-              <button type="button" onClick={() => showToast("Additional file upload is available in the Upload Record flow")} className="mt-3 flex items-center gap-2 rounded-md text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <button type="button" onClick={() => showToast("Additional file upload is available in the Upload Record flow")} className="mt-3 flex min-h-10 max-w-full items-center gap-2 rounded-md text-left text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 + Upload replacement / additional file
               </button>
             )}
           </div>
 
           {/* Comments */}
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">
               Comments{" "}
               <span className="ml-1 text-muted-foreground font-normal">({recordComments.length})</span>
@@ -270,13 +272,13 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                         .map((n) => n[0])
                         .join("")}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm font-medium text-foreground">{cmt.user}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <span className="break-words text-sm font-medium text-foreground">{cmt.user}</span>
                         <span className="text-[10px] capitalize text-muted-foreground">
                           {cmt.role}
                         </span>
-                        <span className="ml-auto text-[11px] text-muted-foreground">
+                        <span className="basis-full text-[11px] text-muted-foreground sm:ml-auto sm:basis-auto">
                           {new Date(cmt.timestamp).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
@@ -287,7 +289,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                       </div>
                       <div
                         className={cn(
-                          "mt-1 rounded-lg px-4 py-3 text-sm text-foreground leading-relaxed",
+                          "mt-1 break-words rounded-lg px-3 py-3 text-sm leading-relaxed text-foreground sm:px-4",
                           cmt.isUnread ? "bg-blue-50 border border-blue-100" : "bg-muted/40"
                         )}
                       >
@@ -309,7 +311,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                 >
                   {currentUser.initials}
                 </div>
-                <div className="flex-1 space-y-2">
+                <div className="min-w-0 flex-1 space-y-2">
                   <Textarea
                     placeholder="Add a comment or follow-up note..."
                     rows={2}
@@ -327,7 +329,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                     size="sm"
                     onClick={handleComment}
                     disabled={!commentText.trim()}
-                    className="gap-1.5"
+                    className="min-h-10 w-full gap-1.5 sm:min-h-8 sm:w-auto"
                   >
                     <Send className="h-3.5 w-3.5" />
                     Send
@@ -339,9 +341,9 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Sidebar: Actions + Activity */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {/* Actions */}
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Actions</h2>
             <div className="mt-3 space-y-2">
               {role === "owner" && !isArchived && (
@@ -427,7 +429,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           {/* Activity Timeline */}
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Activity</h2>
             <div className="mt-4 space-y-4">
               {recordActivity.map((evt, i) => {
@@ -440,9 +442,9 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card z-10">
                       <Icon className="h-3 w-3 text-muted-foreground" />
                     </div>
-                    <div className="flex-1 pb-1">
-                      <p className="text-xs font-medium text-foreground leading-snug">{evt.detail}</p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    <div className="min-w-0 flex-1 pb-1">
+                      <p className="break-words text-xs font-medium leading-snug text-foreground">{evt.detail}</p>
+                      <p className="mt-0.5 break-words text-[11px] text-muted-foreground">
                         {evt.user} &middot;{" "}
                         {new Date(evt.timestamp).toLocaleDateString("en-US", {
                           month: "short",

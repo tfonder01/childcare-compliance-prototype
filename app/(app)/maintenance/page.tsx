@@ -20,6 +20,7 @@ import type { MaintenanceApprovalStatus, MaintenanceStatus } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NewMaintenanceRequestModal } from "@/components/new-maintenance-request-modal"
+import { hasPotentialRepeatHistory } from "@/lib/maintenance-history"
 import {
   ApprovalStatusBadge,
   MaintenanceStatusBadge,
@@ -29,7 +30,7 @@ import {
 
 const approvalOptions: MaintenanceApprovalStatus[] = ["Not Required", "Awaiting Approval", "Approved", "Declined"]
 const statusOptions: MaintenanceStatus[] = ["Submitted", "Approved / Ready", "In Progress", "Waiting", "Completed", "Cancelled"]
-const selectClass = "h-9 min-w-0 rounded-lg border border-input bg-card px-2.5 text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/30"
+const selectClass = "h-9 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/30"
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
 
 function SummaryCard({ label, value, icon: Icon, accent }: { label: string; value: string | number; icon: React.ElementType; accent: string }) {
@@ -108,12 +109,12 @@ export default function MaintenancePage() {
         <Button className="gap-2 sm:shrink-0" onClick={() => setModalOpen(true)}><Plus className="h-4 w-4" />New Maintenance Request</Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2 lg:grid-cols-5">
         <SummaryCard label="Open Requests" value={active.filter((request) => !["Completed", "Cancelled"].includes(request.maintenanceStatus)).length} icon={Wrench} accent="bg-blue-50 text-blue-700" />
         <SummaryCard label="Awaiting Approval" value={awaitingApprovalCount} icon={AlertCircle} accent={awaitingApprovalCount > 0 ? "bg-amber-50 text-amber-700" : "bg-slate-50 text-slate-500"} />
         <SummaryCard label="In Progress" value={active.filter((request) => request.maintenanceStatus === "In Progress").length} icon={Clock3} accent="bg-indigo-50 text-indigo-700" />
         <SummaryCard label="Completed This Month" value={completedThisMonth.length} icon={CheckCircle2} accent="bg-emerald-50 text-emerald-700" />
-        <div className="col-span-2 lg:col-span-1"><SummaryCard label="Cost This Month" value={money.format(totalCostThisMonth)} icon={CircleDollarSign} accent="bg-violet-50 text-violet-700" /></div>
+        <div className="min-[390px]:col-span-2 lg:col-span-1"><SummaryCard label="Cost This Month" value={money.format(totalCostThisMonth)} icon={CircleDollarSign} accent="bg-violet-50 text-violet-700" /></div>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -175,7 +176,7 @@ export default function MaintenancePage() {
                 return (
                   <Link key={request.id} href={`/maintenance/${request.id}`} className="interactive-row block p-4">
                     <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold leading-snug text-foreground">{request.title}</p><p className="mt-1 text-xs text-muted-foreground">{location?.name} · {request.area}</p></div><PriorityBadge priority={request.priority} /></div>
-                    <div className="mt-3 flex flex-wrap gap-1.5"><ApprovalStatusBadge status={request.approvalStatus} /><MaintenanceStatusBadge status={request.maintenanceStatus} />{request.repeatRepairCount && request.repeatRepairCount > 1 ? <RepeatIssueBadge /> : null}</div>
+                    <div className="mt-3 flex flex-wrap gap-1.5"><ApprovalStatusBadge status={request.approvalStatus} /><MaintenanceStatusBadge status={request.maintenanceStatus} />{hasPotentialRepeatHistory(request) ? <RepeatIssueBadge /> : null}</div>
                     <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground"><span>{request.category}</span><span className="font-medium text-foreground">{request.finalCost != null ? money.format(request.finalCost) : request.estimatedCost != null ? `Est. ${money.format(request.estimatedCost)}` : "—"}</span></div>
                   </Link>
                 )
@@ -196,7 +197,7 @@ export default function MaintenancePage() {
                         onClick={() => router.push(`/maintenance/${request.id}`)}
                         className="group cursor-pointer transition-colors duration-150 ease-out hover:bg-muted/55"
                       >
-                        <td className="px-4 py-3.5"><Link href={`/maintenance/${request.id}`} onClick={(event) => event.stopPropagation()} className="block max-w-[280px] truncate rounded-sm text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{request.title}</Link><div className="mt-1.5 flex items-center gap-1.5"><PriorityBadge priority={request.priority} />{request.repeatRepairCount && request.repeatRepairCount > 1 ? <RepeatIssueBadge /> : null}</div></td>
+                        <td className="px-4 py-3.5"><Link href={`/maintenance/${request.id}`} onClick={(event) => event.stopPropagation()} className="block max-w-[280px] truncate rounded-sm text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{request.title}</Link><div className="mt-1.5 flex items-center gap-1.5"><PriorityBadge priority={request.priority} />{hasPotentialRepeatHistory(request) ? <RepeatIssueBadge /> : null}</div></td>
                         <td className="px-4 py-3.5 text-xs text-foreground">{location?.name ?? "—"}</td>
                         <td className="px-4 py-3.5 text-xs text-foreground">{request.area}</td>
                         <td className="px-4 py-3.5 text-xs text-muted-foreground">{request.category}</td>

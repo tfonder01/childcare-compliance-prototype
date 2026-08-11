@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback } from "react"
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react"
 import type {
   ComplianceRecord,
   Comment,
@@ -12,6 +12,7 @@ import type {
   SupplyRequest,
 } from "./types"
 import { ToastViewport, type ToastMessage } from "@/components/toast-viewport"
+import type { SessionUser } from "./api-client"
 import {
   RECORDS as INITIAL_RECORDS,
   COMMENTS as INITIAL_COMMENTS,
@@ -57,12 +58,15 @@ interface AppState {
   markAllNotificationsRead: () => void
   unreadCount: number
   showToast: (message: string) => void
+  isDemoMode: boolean
 }
 
 const AppContext = createContext<AppState | null>(null)
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<Role>("owner")
+export function AppProvider({ children, productionUser }: { children: React.ReactNode; productionUser?: SessionUser | null }) {
+  const productionMode = Boolean(productionUser)
+  const productionRole = productionUser?.role.toLowerCase() as Role | undefined
+  const [role, setRoleState] = useState<Role>(productionRole ?? "owner")
   const [allRecords, setRecords] = useState<ComplianceRecord[]>(INITIAL_RECORDS)
   const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS)
   const [activity, setActivity] = useState<ActivityEvent[]>(INITIAL_ACTIVITY)
@@ -71,29 +75,49 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [allSupplyRequests, setSupplyRequests] = useState<SupplyRequest[]>(INITIAL_SUPPLY_REQUESTS)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
-  const currentUser =
-    role === "owner"
+  const currentUser = useMemo(() => productionUser
+    ? ({
+        id: productionUser.id,
+        name: `${productionUser.firstName} ${productionUser.lastName}`,
+        role: productionRole!,
+        locationId: productionUser.locations[0]?.id,
+        initials: `${productionUser.firstName[0] ?? ""}${productionUser.lastName[0] ?? ""}`.toUpperCase(),
+      })
+    : role === "owner"
       ? USERS.find((user) => user.role === "owner")!
       : role === "director"
         ? USERS.find((user) => user.role === "director")!
-        : USERS.find((user) => user.role === "assistant_director")!
+        : USERS.find((user) => user.role === "assistant_director")!, [productionUser, productionRole, role])
 
-  const locations =
-    role === "owner"
+  const locations = productionUser
+    ? productionUser.locations.map((location) => ({
+        id: location.id,
+        name: location.name,
+        director: productionRole === "owner" ? "" : currentUser.name,
+        directorId: productionRole === "owner" ? "" : currentUser.id,
+        address: [location.addressLine1, location.addressLine2, `${location.city}, ${location.state} ${location.postalCode}`].filter(Boolean).join(", "),
+        phone: location.phone ?? "",
+        capacity: 0,
+      }))
+    : role === "owner"
       ? LOCATIONS
       : LOCATIONS.filter((location) => location.id === currentUser.locationId)
 
-  const records =
-    role === "owner"
+  const records = productionMode
+    ? []
+    : role === "owner"
       ? allRecords
       : allRecords.filter((record) => record.locationId === currentUser.locationId)
 
-  const maintenanceRequests =
-    role === "owner"
+  const maintenanceRequests = productionMode
+    ? []
+    : role === "owner"
       ? allMaintenanceRequests
       : allMaintenanceRequests.filter((request) => request.locationId === currentUser.locationId)
 
-  const supplyRequests = role === "owner"
+  const supplyRequests = productionMode
+    ? []
+    : role === "owner"
     ? allSupplyRequests
     : allSupplyRequests.filter((request) => request.locationId === currentUser.locationId)
 
@@ -101,20 +125,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const visibleMaintenanceIds = new Set(maintenanceRequests.map((request) => request.id))
   const visibleSupplyIds = new Set(supplyRequests.map((request) => request.id))
   const isVisibleEntity = (id: string) => visibleRecordIds.has(id) || visibleMaintenanceIds.has(id) || visibleSupplyIds.has(id)
-  const visibleActivity =
-    role === "owner"
+  const visibleActivity = productionMode
+    ? []
+    : role === "owner"
       ? activity
       : activity.filter((event) => isVisibleEntity(event.recordId))
-  const visibleComments =
-    role === "owner"
+  const visibleComments = productionMode
+    ? []
+    : role === "owner"
       ? comments
       : comments.filter((comment) => isVisibleEntity(comment.recordId))
-  const visibleNotifications =
-    role === "owner"
+  const visibleNotifications = productionMode
+    ? []
+    : role === "owner"
       ? notifications
       : notifications.filter((notification) => !notification.recordId || isVisibleEntity(notification.recordId))
 
-  const setRole = useCallback((r: Role) => setRoleState(r), [])
+  const setRole = useCallback((r: Role) => { if (!productionMode) setRoleState(r) }, [productionMode])
 
   const showToast = useCallback((message: string) => {
     const id = Date.now() + Math.random()
@@ -469,6 +496,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         markAllNotificationsRead,
         unreadCount,
         showToast,
+        isDemoMode: !productionMode,
       }}
     >
       {children}

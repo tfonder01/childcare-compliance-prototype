@@ -5,6 +5,8 @@ import { AppProvider } from "@/lib/store"
 import { Sidebar } from "@/components/sidebar"
 import { Topbar } from "@/components/topbar"
 import { cn } from "@/lib/utils"
+import { AuthGate } from "@/components/auth-gate"
+import { useAuth } from "@/lib/auth"
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -43,9 +45,12 @@ function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
   return (
-    <AppProvider>
-      <AppShell>{children}</AppShell>
-    </AppProvider>
+    <AuthGate>
+      <AppProvider productionUser={user}>
+        <AppShell>{children}</AppShell>
+      </AppProvider>
+    </AuthGate>
   )
 }

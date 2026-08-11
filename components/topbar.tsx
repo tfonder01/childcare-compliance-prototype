@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 import { UploadModal } from "@/components/upload-modal"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/lib/auth"
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -39,8 +40,9 @@ const ROLE_LABELS = {
 } as const
 
 export function Topbar({ onMenuClick, menuOpen = false }: { onMenuClick?: () => void; menuOpen?: boolean }) {
-  const { role, setRole, currentUser, notifications, unreadCount, markAllNotificationsRead, markNotificationRead } =
+  const { role, setRole, currentUser, notifications, unreadCount, markAllNotificationsRead, markNotificationRead, isDemoMode } =
     useApp()
+  const { logout } = useAuth()
   const [uploadOpen, setUploadOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const pathname = usePathname()
@@ -76,7 +78,7 @@ export function Topbar({ onMenuClick, menuOpen = false }: { onMenuClick?: () => 
 
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Role Switcher */}
-          <DropdownMenu>
+          {isDemoMode && <DropdownMenu>
             <DropdownMenuTrigger
               render={<Button variant="outline" size="sm" className="gap-1.5 text-xs" aria-label={`Switch demo role. Currently ${role}`} />}
             >
@@ -119,7 +121,7 @@ export function Topbar({ onMenuClick, menuOpen = false }: { onMenuClick?: () => 
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>}
 
           {/* Upload Button */}
           <Button size="sm" className="gap-1.5 text-xs" onClick={() => setUploadOpen(true)} aria-label="Upload record">
@@ -219,6 +221,7 @@ export function Topbar({ onMenuClick, menuOpen = false }: { onMenuClick?: () => 
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuLinkItem render={<Link href="/settings" />}>Settings</DropdownMenuLinkItem>
+              {!isDemoMode && <DropdownMenuItem onClick={() => void logout()}>Sign out</DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

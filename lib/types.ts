@@ -4,13 +4,17 @@ export type RecordStatus = "New" | "Reviewed" | "Needs Attention" | "Archived"
 
 export type ComplianceCategory =
   | "Licensing"
-  | "Health & Safety Drills"
+  | "Health & Safety"
+  | "Drills"
   | "Child Files"
   | "Staff Files"
   | "Classroom Observations"
   | "CCIR / Critical Incidents"
   | "Parent Complaints"
   | "Staff Complaints"
+
+/** Legacy value retired in favor of separate "Health & Safety" and "Drills" categories. Kept only for migrating old data. */
+export type LegacyComplianceCategory = "Health & Safety Drills"
 
 export type RecordCategory = ComplianceCategory | "Operations"
 export type RecordWorkspace = "compliance" | "operations"
@@ -19,7 +23,23 @@ export type OperationsRecordType =
   | "Opening Checklist"
   | "Closing Checklist"
   | "Playground Checklist"
+  | "Cleaning Checklist"
   | "Other Operations Record"
+
+/** How a recurring record's reporting period is represented. NONE = one-time / not recurring. */
+export type ReportingCadence = "WEEKLY" | "MONTHLY" | "NONE"
+
+/**
+ * Represents the reporting period a record belongs to, independent of the record's upload date.
+ * For WEEKLY records, `weekOf` is the Monday that starts the reporting week.
+ * For MONTHLY records, `month` (01-12) and `year` are used.
+ */
+export interface ReportingPeriod {
+  cadence: ReportingCadence
+  weekOf?: string
+  month?: string
+  year?: string
+}
 
 export type ClassroomAgeGroup =
   | "Infant"
@@ -57,6 +77,7 @@ export interface ComplianceRecord {
   classroomAgeGroup?: ClassroomAgeGroup
   observationMonth?: string
   area?: string
+  reportingPeriod?: ReportingPeriod
 }
 
 export interface ActivityEvent {
@@ -227,4 +248,30 @@ export interface SupplyRequest {
   lastUpdated: string
   photos: SupplyAttachment[]
   archived: boolean
+}
+
+/**
+ * Foundation types for deadline / expected-submission tracking (reminders sprint prep).
+ * These describe what a *recurring* submission requirement looks like so overdue/due-soon
+ * state can be derived rather than manually flagged. Due-day business rules are not yet
+ * confirmed by the client — see lib/deadlines.ts for the placeholder assumptions in use.
+ */
+export type SubmissionStatus = "Upcoming" | "Due Soon" | "Submitted" | "Overdue"
+
+export interface ExpectedSubmission {
+  id: string
+  locationId: string
+  recordArea: RecordWorkspace
+  /** ComplianceCategory or OperationsRecordType label this expectation covers. */
+  expectedType: string
+  cadence: ReportingCadence
+  /** Human-readable label for the period, e.g. "August 2026" or "Week of Aug 17, 2026". */
+  periodLabel: string
+  periodStart: string
+  dueDate: string
+  submittedRecordId?: string
+  submittedDate?: string
+  status: SubmissionStatus
+  /** Optional user/role this submission is expected from, when known. */
+  responsibleUserId?: string
 }

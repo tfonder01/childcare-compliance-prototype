@@ -9,6 +9,7 @@ import {
   MAINTENANCE_CATEGORIES,
 } from "@/lib/mock-data"
 import type { MaintenancePriority, MaintenanceRequest } from "@/lib/types"
+import { priorityLabel } from "@/lib/priority-labels"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -133,7 +134,7 @@ export function NewMaintenanceRequestModal({ open, onOpenChange }: { open: boole
             <div className="space-y-1.5">
               <Label htmlFor="maintenance-priority">Priority</Label>
               <select id="maintenance-priority" className={fieldClass} value={priority} onChange={(event) => setPriority(event.target.value as MaintenancePriority)}>
-                {priorities.map((item) => <option key={item}>{item}</option>)}
+                {priorities.map((item) => <option key={item} value={item}>{priorityLabel(item)}</option>)}
               </select>
             </div>
 

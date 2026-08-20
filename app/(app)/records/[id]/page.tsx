@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils"
 import type { Comment } from "@/lib/types"
 import { getRecordWorkspace, isOperationsRecord } from "@/lib/record-workspaces"
 import { WorkspaceBadge } from "@/components/workspace-badge"
+import { reportingPeriodLabel } from "@/lib/reporting-period"
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   created: FileText,
@@ -161,6 +162,15 @@ export default function RecordDetailPage({ params }: { params: Promise<{ id: str
                     Area
                   </dt>
                   <dd className="mt-1 text-sm text-foreground">{record.area}</dd>
+                </div>
+              )}
+              {record.reportingPeriod && record.reportingPeriod.cadence !== "NONE" && (
+                <div>
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    Reporting Period
+                  </dt>
+                  <dd className="mt-1 text-sm text-foreground">{reportingPeriodLabel(record.reportingPeriod)}</dd>
                 </div>
               )}
               <div>

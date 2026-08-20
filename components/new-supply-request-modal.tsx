@@ -5,6 +5,7 @@ import { Camera, PackagePlus } from "lucide-react"
 import { useApp } from "@/lib/store"
 import { CLASSROOM_AGE_GROUPS, SUPPLY_AREAS, SUPPLY_CATEGORIES } from "@/lib/mock-data"
 import type { SupplyPriority, SupplyRequest } from "@/lib/types"
+import { priorityLabel } from "@/lib/priority-labels"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -73,7 +74,7 @@ export function NewSupplyRequestModal({ open, onOpenChange }: { open: boolean; o
           <div className="space-y-1.5"><Label htmlFor="supply-location">Location</Label><select id="supply-location" className={fieldClass} value={locationId} onChange={(e) => setLocationId(e.target.value)} disabled={role !== "owner"} required>{locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select>{role !== "owner" && <p className="text-[11px] text-muted-foreground">Restricted to your assigned location.</p>}</div>
           <div className="space-y-1.5"><Label htmlFor="supply-area">Classroom / Area <span className="font-normal text-muted-foreground">(optional)</span></Label><select id="supply-area" className={fieldClass} value={area} onChange={(e) => setArea(e.target.value)}><option value="">Not specified</option>{SUPPLY_AREAS.map((value) => <option key={value}>{value}</option>)}</select></div>
           <div className="space-y-1.5"><Label htmlFor="supply-category">Category</Label><select id="supply-category" className={fieldClass} value={category} onChange={(e) => setCategory(e.target.value)} required><option value="">Select category</option>{SUPPLY_CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select></div>
-          <div className="space-y-1.5"><Label htmlFor="supply-priority">Priority</Label><select id="supply-priority" className={fieldClass} value={priority} onChange={(e) => setPriority(e.target.value as SupplyPriority)}>{priorities.map((value) => <option key={value}>{value}</option>)}</select></div>
+          <div className="space-y-1.5"><Label htmlFor="supply-priority">Priority</Label><select id="supply-priority" className={fieldClass} value={priority} onChange={(e) => setPriority(e.target.value as SupplyPriority)}>{priorities.map((value) => <option key={value} value={value}>{priorityLabel(value)}</option>)}</select></div>
           <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="supply-title">Item / Request Title</Label><Input id="supply-title" value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="Example: Broken classroom tablet replacement" required /></div>
           <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="supply-description">Description / Reason</Label><Textarea id="supply-description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe what is needed and why." required /></div>
           <div className="space-y-1.5"><Label htmlFor="supply-quantity">Quantity</Label><Input id="supply-quantity" type="number" min="1" step="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} required /></div>

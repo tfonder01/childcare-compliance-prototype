@@ -3,6 +3,7 @@ import type {
   MaintenancePriority,
   MaintenanceStatus,
 } from "@/lib/types"
+import { priorityLabel } from "@/lib/priority-labels"
 import { cn } from "@/lib/utils"
 
 const base = "inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4 transition-colors duration-200 motion-reduce:duration-0"
@@ -36,7 +37,7 @@ export function PriorityBadge({ priority, className }: { priority: MaintenancePr
     High: "border-amber-200 bg-amber-50/70 text-amber-700",
     Urgent: "border-rose-200 bg-rose-50/75 text-rose-700",
   }
-  return <span className={cn(base, styles[priority], className)}>{priority}</span>
+  return <span className={cn(base, styles[priority], className)}>{priorityLabel(priority)}</span>
 }
 
 export function RepeatIssueBadge({ className }: { className?: string }) {

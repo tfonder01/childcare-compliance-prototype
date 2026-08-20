@@ -19,44 +19,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CheckCircle2, File, Upload } from "lucide-react"
+import { CheckCircle2, File, Info, MapPin, Upload, X } from "lucide-react"
 import { useApp } from "@/lib/store"
 import { CLASSROOM_AGE_GROUPS, COMPLIANCE_CATEGORIES, OPERATIONS_RECORD_TYPES } from "@/lib/mock-data"
+import { MONTH_OPTIONS, monthName, reportingPeriodLabel, startOfWeek } from "@/lib/reporting-period"
 import type {
   ClassroomAgeGroup,
   ComplianceCategory,
   OperationsRecordType,
-  RecordCategory,
+  ReportingCadence,
   RecordWorkspace,
 } from "@/lib/types"
 
 const TODAY = new Date().toISOString().split("T")[0]
 const CURRENT_YEAR = Number(TODAY.slice(0, 4))
-
-const MONTHS = [
-  { value: "01", label: "January" },
-  { value: "02", label: "February" },
-  { value: "03", label: "March" },
-  { value: "04", label: "April" },
-  { value: "05", label: "May" },
-  { value: "06", label: "June" },
-  { value: "07", label: "July" },
-  { value: "08", label: "August" },
-  { value: "09", label: "September" },
-  { value: "10", label: "October" },
-  { value: "11", label: "November" },
-  { value: "12", label: "December" },
-] as const
-
 const YEARS = Array.from({ length: 8 }, (_, index) => String(CURRENT_YEAR - 2 + index))
 
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+export const MAX_UPLOAD_LABEL = "20MB"
+const ACCEPTED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"]
+const ACCEPTED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png"]
+
 const RECORD_TYPE_OPTIONS: Partial<Record<ComplianceCategory, readonly string[]>> = {
-  "Health & Safety Drills": ["Fire Drill", "Lockdown Drill", "Tornado Drill", "Other Drill"],
+  Drills: ["Fire Drill", "Lockdown Drill", "Tornado Drill", "Other Drill"],
+  "Health & Safety": ["Health & Safety Inspection", "Safety Checklist Review", "Other Health & Safety Record"],
   Licensing: ["State Licensing Inspection", "Annual DCF Licensing Renewal", "Other Licensing Record"],
   "Child Files": ["Child Enrollment File", "Child File Audit", "Other Child Record"],
   "Staff Files": ["Staff Background Check", "CPR / First Aid Certification", "Staff File Audit", "Other Staff Record"],
   "Parent Complaints": ["Parent Complaint", "Supervision Concern", "Health / Safety Concern", "Other Parent Complaint"],
   "Staff Complaints": ["Workplace Conduct", "Scheduling / Policy", "Other Staff Complaint"],
+}
+
+/** Categories/types whose records recur on a reporting cadence, and which cadences are offered. */
+const COMPLIANCE_CADENCE_OPTIONS: Partial<Record<ComplianceCategory, { allowed: ReportingCadence[]; default: ReportingCadence }>> = {
+  "Classroom Observations": { allowed: ["MONTHLY"], default: "MONTHLY" },
+  Drills: { allowed: ["MONTHLY"], default: "MONTHLY" },
+  "Health & Safety": { allowed: ["MONTHLY", "WEEKLY"], default: "MONTHLY" },
+}
+
+const OPERATIONS_CADENCE_OPTIONS: Partial<Record<OperationsRecordType, { allowed: ReportingCadence[]; default: ReportingCadence }>> = {
+  "Opening Checklist": { allowed: ["WEEKLY", "MONTHLY"], default: "WEEKLY" },
+  "Closing Checklist": { allowed: ["WEEKLY", "MONTHLY"], default: "WEEKLY" },
+  "Playground Checklist": { allowed: ["WEEKLY", "MONTHLY"], default: "WEEKLY" },
+  "Cleaning Checklist": { allowed: ["WEEKLY", "MONTHLY"], default: "WEEKLY" },
 }
 
 interface UploadModalProps {
@@ -70,10 +75,13 @@ function createInitialForm(locationId: string, workspace: RecordWorkspace | "") 
   return {
     locationId,
     workspace,
-    category: (workspace === "operations" ? "Operations" : "") as RecordCategory | "",
+    complianceCategory: "" as ComplianceCategory | "",
+    operationsType: "" as OperationsRecordType | "",
     classroomAgeGroup: "" as ClassroomAgeGroup | "",
     area: "",
     recordType: "",
+    cadence: "NONE" as ReportingCadence,
+    weekOf: TODAY,
     month: TODAY.slice(5, 7),
     year: TODAY.slice(0, 4),
     date: TODAY,
@@ -82,33 +90,48 @@ function createInitialForm(locationId: string, workspace: RecordWorkspace | "") 
     useCustomTitle: false,
     customTitle: "",
     description: "",
-    fileName: "",
+    file: null as File | null,
+    fileError: "",
   }
 }
 
 type UploadForm = ReturnType<typeof createInitialForm>
 
-function monthLabel(month: string) {
-  return MONTHS.find((option) => option.value === month)?.label ?? ""
+function validateFile(file: File): string {
+  const hasAcceptedExtension = ACCEPTED_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext))
+  const hasAcceptedType = ACCEPTED_MIME_TYPES.includes(file.type)
+  if (!hasAcceptedType && !hasAcceptedExtension) return "Only PDF, JPG, or PNG files are accepted."
+  if (file.size > MAX_UPLOAD_BYTES) return `File exceeds the ${MAX_UPLOAD_LABEL} upload limit.`
+  if (file.size === 0) return "File must not be empty."
+  return ""
+}
+
+function periodFromForm(form: UploadForm) {
+  if (form.cadence === "WEEKLY") return { cadence: "WEEKLY" as const, weekOf: startOfWeek(form.weekOf) }
+  if (form.cadence === "MONTHLY") return { cadence: "MONTHLY" as const, month: form.month, year: form.year }
+  return { cadence: "NONE" as const }
 }
 
 function generateRecordTitle(form: UploadForm) {
-  const monthYear = form.month && form.year ? `${monthLabel(form.month)} ${form.year}` : ""
+  const period = form.cadence !== "NONE" ? reportingPeriodLabel(periodFromForm(form)) : ""
   const reference = form.referenceText.trim()
   const incident = form.incidentText.trim()
 
-  switch (form.category) {
+  if (form.workspace === "operations") {
+    if (form.operationsType === "Other Operations Record") {
+      return reference ? `Operations — ${reference}` : ""
+    }
+    if (!form.operationsType || !period) return ""
+    const prefix = form.area.trim() ? `${form.area.trim()} ` : ""
+    return `${prefix}${form.operationsType} — ${period}`
+  }
+
+  switch (form.complianceCategory) {
     case "Classroom Observations":
-      return form.classroomAgeGroup && monthYear
-        ? `${form.classroomAgeGroup} Classroom Observation — ${monthYear}`
-        : ""
-    case "Health & Safety Drills":
-      return form.recordType && monthYear ? `${form.recordType} — ${monthYear}` : ""
-    case "Operations":
-      if (form.recordType === "Other Operations Record") {
-        return reference ? `Operations — ${reference}` : ""
-      }
-      return form.recordType && monthYear ? `${form.recordType} — ${monthYear}` : ""
+      return form.classroomAgeGroup && period ? `${form.classroomAgeGroup} Classroom Observation — ${period}` : ""
+    case "Drills":
+    case "Health & Safety":
+      return form.recordType && period ? `${form.recordType} — ${period}` : ""
     case "Licensing":
       return form.recordType && form.year ? `${form.recordType} — ${form.year}` : ""
     case "Child Files":
@@ -136,72 +159,89 @@ function relatedReference(form: UploadForm) {
   const reference = form.referenceText.trim()
   const incident = form.incidentText.trim()
 
-  if (form.category === "Child Files" && reference) return `Child: ${reference}`
-  if (form.category === "Staff Files" && reference) return `Staff: ${reference}`
-  if ((form.category === "Parent Complaints" || form.category === "Staff Complaints") && reference) {
+  if (form.complianceCategory === "Child Files" && reference) return `Child: ${reference}`
+  if (form.complianceCategory === "Staff Files" && reference) return `Staff: ${reference}`
+  if ((form.complianceCategory === "Parent Complaints" || form.complianceCategory === "Staff Complaints") && reference) {
     return `Reference: ${reference}`
   }
-  if (form.category === "CCIR / Critical Incidents" && incident) return `Incident: ${incident}`
+  if (form.complianceCategory === "CCIR / Critical Incidents" && incident) return `Incident: ${incident}`
   return undefined
 }
 
 export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace }: UploadModalProps) {
-  const { addRecord, currentUser, role, locations } = useApp()
-  const initialLocationId = defaultLocationId ?? (role !== "owner" ? currentUser.locationId ?? "" : "")
+  const { addRecord, currentUser, role, locations, isDemoMode } = useApp()
+  const showLocationPicker = role === "owner" || locations.length > 1
+  const initialLocationId = defaultLocationId ?? (showLocationPicker ? "" : locations[0]?.id ?? "")
   const [submitted, setSubmitted] = useState(false)
+  const [notAvailable, setNotAvailable] = useState(false)
   const [form, setForm] = useState(() => createInitialForm(initialLocationId, defaultWorkspace ?? ""))
 
   const generatedTitle = generateRecordTitle(form)
   const recordTitle = form.useCustomTitle ? form.customTitle.trim() : generatedTitle
-  const canSubmit = Boolean(recordTitle && form.locationId && form.workspace && form.category)
+  const areaTypeSelected = form.workspace === "operations" ? Boolean(form.operationsType) : Boolean(form.complianceCategory)
+  const canSubmit = Boolean(recordTitle && form.locationId && form.workspace && areaTypeSelected && !form.fileError)
+
   const recordTypeOptions =
+    form.workspace === "compliance" && form.complianceCategory ? RECORD_TYPE_OPTIONS[form.complianceCategory] : undefined
+  const cadenceConfig =
     form.workspace === "operations"
-      ? OPERATIONS_RECORD_TYPES
-      : form.category && form.category !== "Operations"
-        ? RECORD_TYPE_OPTIONS[form.category]
-        : undefined
-  const usesMonthYear =
-    form.category === "Classroom Observations" ||
-    form.category === "Health & Safety Drills" ||
-    (form.category === "Operations" && form.recordType !== "Other Operations Record")
-  const usesYear = usesMonthYear || form.category === "Licensing"
+      ? (form.operationsType ? OPERATIONS_CADENCE_OPTIONS[form.operationsType] : undefined)
+      : (form.complianceCategory ? COMPLIANCE_CADENCE_OPTIONS[form.complianceCategory] : undefined)
+  const usesReportingPeriod = Boolean(cadenceConfig)
+  const usesYear = form.workspace === "compliance" && form.complianceCategory === "Licensing"
   const usesClassroom =
     form.workspace === "operations" ||
-    form.category === "Classroom Observations" ||
-    form.category === "Parent Complaints"
+    form.complianceCategory === "Classroom Observations" ||
+    form.complianceCategory === "Parent Complaints"
+  const usesArea = form.workspace === "operations"
   const usesReference =
-    form.category === "Child Files" ||
-    form.category === "Staff Files" ||
-    form.category === "Parent Complaints" ||
-    form.category === "Staff Complaints" ||
-    (form.category === "Operations" && form.recordType === "Other Operations Record")
+    form.complianceCategory === "Child Files" ||
+    form.complianceCategory === "Staff Files" ||
+    form.complianceCategory === "Parent Complaints" ||
+    form.complianceCategory === "Staff Complaints" ||
+    (form.workspace === "operations" && form.operationsType === "Other Operations Record")
 
-  const handleCategoryChange = (value: string | null) => {
-    setForm((current) => ({
-      ...current,
-      category: (value ?? "") as RecordCategory | "",
-      classroomAgeGroup: "",
-      recordType: "",
-      referenceText: "",
-      incidentText: "",
-      useCustomTitle: false,
-      customTitle: "",
-    }))
-  }
+  const resetTypeSpecificFields = () => ({
+    classroomAgeGroup: "" as ClassroomAgeGroup | "",
+    area: "",
+    recordType: "",
+    referenceText: "",
+    incidentText: "",
+    useCustomTitle: false,
+    customTitle: "",
+    cadence: "NONE" as ReportingCadence,
+  })
 
   const handleWorkspaceChange = (value: string | null) => {
     const workspace = (value ?? "") as RecordWorkspace | ""
     setForm((current) => ({
       ...current,
       workspace,
-      category: workspace === "operations" ? "Operations" : "",
-      classroomAgeGroup: "",
-      area: "",
-      recordType: "",
-      referenceText: "",
-      incidentText: "",
-      useCustomTitle: false,
-      customTitle: "",
+      complianceCategory: "",
+      operationsType: "",
+      ...resetTypeSpecificFields(),
+    }))
+  }
+
+  const handleComplianceCategoryChange = (value: string | null) => {
+    const category = (value ?? "") as ComplianceCategory | ""
+    const config = category ? COMPLIANCE_CADENCE_OPTIONS[category] : undefined
+    setForm((current) => ({
+      ...current,
+      complianceCategory: category,
+      ...resetTypeSpecificFields(),
+      cadence: config?.default ?? "NONE",
+    }))
+  }
+
+  const handleOperationsTypeChange = (value: string | null) => {
+    const type = (value ?? "") as OperationsRecordType | ""
+    const config = type ? OPERATIONS_CADENCE_OPTIONS[type] : undefined
+    setForm((current) => ({
+      ...current,
+      operationsType: type,
+      ...resetTypeSpecificFields(),
+      cadence: config?.default ?? "NONE",
     }))
   }
 
@@ -209,44 +249,59 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
     setForm((current) => ({
       ...current,
       date,
-      ...(date ? { month: date.slice(5, 7), year: date.slice(0, 4) } : {}),
+      ...(date ? { month: date.slice(5, 7), year: date.slice(0, 4), weekOf: date } : {}),
     }))
   }
 
+  const handleFileChange = (file: File | undefined) => {
+    if (!file) {
+      setForm((current) => ({ ...current, file: null, fileError: "" }))
+      return
+    }
+    setForm((current) => ({ ...current, file, fileError: validateFile(file) }))
+  }
+
   const handleSubmit = () => {
-    if (!canSubmit || !form.category) return
+    if (!canSubmit) return
+
+    if (!isDemoMode) {
+      // Compliance/Operations persistence endpoints are not implemented on the backend yet.
+      // Keep the UI honest instead of pretending the record was saved.
+      setNotAvailable(true)
+      return
+    }
+
     const now = new Date().toISOString().split("T")[0]
     addRecord({
       id: `rec_${Date.now()}`,
       title: recordTitle,
       locationId: form.locationId,
-      category: form.category,
+      category: form.workspace === "operations" ? "Operations" : (form.complianceCategory as ComplianceCategory),
       workspace: form.workspace as RecordWorkspace,
-      recordType:
-        form.workspace === "operations" && form.recordType
-          ? (form.recordType as OperationsRecordType)
-          : undefined,
+      recordType: form.workspace === "operations" && form.operationsType ? form.operationsType : undefined,
       status: "New",
       uploadedBy: currentUser.name,
       uploadedById: currentUser.id,
       uploadDate: form.date || now,
       lastUpdated: now,
       description: form.description,
-      fileNames: form.fileName ? [form.fileName] : ["Document.pdf"],
+      fileNames: form.file ? [form.file.name] : [],
       tags: [],
       relatedRef: relatedReference(form),
       classroomAgeGroup: form.classroomAgeGroup || undefined,
       area: form.area.trim() || undefined,
       observationMonth:
-        form.category === "Classroom Observations" && form.month && form.year
+        form.complianceCategory === "Classroom Observations" && form.cadence === "MONTHLY" && form.month && form.year
           ? `${form.year}-${form.month}`
           : undefined,
+      reportingPeriod: form.cadence !== "NONE" ? periodFromForm(form) : undefined,
     })
     setSubmitted(true)
   }
 
   const handleClose = () => {
     setSubmitted(false)
+    setNotAvailable(false)
     setForm(createInitialForm(initialLocationId, defaultWorkspace ?? ""))
     onClose()
   }
@@ -268,6 +323,20 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
             </div>
             <Button onClick={handleClose} className="mt-2">Done</Button>
           </div>
+        ) : notAvailable ? (
+          <div className="flex flex-col items-center gap-4 py-8 text-center [animation:page-enter_200ms_ease-out_both]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 ring-1 ring-blue-100">
+              <Info className="h-7 w-7 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-foreground">Not yet available</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Compliance and Operations record submission is not yet connected to the production backend.
+                Your form is complete and validated; this workflow will be enabled in an upcoming release.
+              </p>
+            </div>
+            <Button onClick={handleClose} className="mt-2">Close</Button>
+          </div>
         ) : (
           <>
             <DialogHeader>
@@ -280,7 +349,11 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
               <div className="grid gap-1.5">
                 <Label>Record Area *</Label>
                 <Select value={form.workspace} onValueChange={handleWorkspaceChange}>
-                  <SelectTrigger><SelectValue placeholder="Select record area" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select record area">
+                      {form.workspace === "operations" ? "Operations" : form.workspace === "compliance" ? "Compliance" : null}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="compliance">Compliance</SelectItem>
                     <SelectItem value="operations">Operations</SelectItem>
@@ -288,39 +361,73 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
                 </Select>
               </div>
 
-              {form.workspace === "compliance" && (
               <div className="grid gap-1.5">
                 <Label>Location *</Label>
-                <Select value={form.locationId} onValueChange={(value) => setForm((current) => ({ ...current, locationId: value ?? "" }))}>
-                  <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
-                  <SelectContent>
-                    {locations.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {showLocationPicker ? (
+                  <Select value={form.locationId} onValueChange={(value) => setForm((current) => ({ ...current, locationId: value ?? "" }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location">
+                        {locations.find((location) => location.id === form.locationId)?.name ?? null}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/30 px-2.5 py-2 text-sm text-foreground">
+                    <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{locations[0]?.name ?? "No assigned location"}</span>
+                  </div>
+                )}
+                {!showLocationPicker && (
+                  <p className="text-[11px] text-muted-foreground">Restricted to your assigned location.</p>
+                )}
               </div>
+
+              {form.workspace === "compliance" && (
+                <div className="grid gap-1.5">
+                  <Label>Compliance Category *</Label>
+                  <Select value={form.complianceCategory} onValueChange={handleComplianceCategoryChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category">{form.complianceCategory || null}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMPLIANCE_CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
 
-              <div className="grid gap-1.5">
-                <Label>Compliance Category *</Label>
-                <Select value={form.category} onValueChange={handleCategoryChange}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                  <SelectContent>
-                    {COMPLIANCE_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {form.workspace === "operations" && (
+                <div className="grid gap-1.5">
+                  <Label>Operations Record Type *</Label>
+                  <Select value={form.operationsType} onValueChange={handleOperationsTypeChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select record type">{form.operationsType || null}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OPERATIONS_RECORD_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              {form.category && (
+              {areaTypeSelected && (
                 <div className="grid gap-4 rounded-xl border border-border bg-muted/20 p-4 [animation:page-enter_180ms_ease-out_both]">
                   {recordTypeOptions && (
                     <div className="grid gap-1.5">
                       <Label>Record Type *</Label>
                       <Select value={form.recordType} onValueChange={(value) => setForm((current) => ({ ...current, recordType: value ?? "" }))}>
-                        <SelectTrigger><SelectValue placeholder="Select record type" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select record type">{form.recordType || null}</SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
                           {recordTypeOptions.map((recordType) => (
                             <SelectItem key={recordType} value={recordType}>{recordType}</SelectItem>
@@ -332,12 +439,14 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
 
                   {usesClassroom && (
                     <div className="grid gap-1.5">
-                      <Label>Classroom / Age Group {form.category === "Classroom Observations" ? "*" : "(optional)"}</Label>
+                      <Label>Classroom / Age Group {form.complianceCategory === "Classroom Observations" ? "*" : "(optional)"}</Label>
                       <Select
                         value={form.classroomAgeGroup}
                         onValueChange={(value) => setForm((current) => ({ ...current, classroomAgeGroup: (value ?? "") as ClassroomAgeGroup | "" }))}
                       >
-                        <SelectTrigger><SelectValue placeholder="Select classroom" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select classroom">{form.classroomAgeGroup || null}</SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
                           {CLASSROOM_AGE_GROUPS.map((group) => (
                             <SelectItem key={group} value={group}>{group}</SelectItem>
@@ -347,7 +456,7 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
                     </div>
                   )}
 
-                  {form.workspace === "operations" && (
+                  {usesArea && (
                     <div className="grid gap-1.5">
                       <Label>Area (optional)</Label>
                       <Input
@@ -358,36 +467,82 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
                     </div>
                   )}
 
-                  {usesMonthYear && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="grid gap-1.5">
-                        <Label>Month *</Label>
-                        <Select value={form.month} onValueChange={(value) => setForm((current) => ({ ...current, month: value ?? "" }))}>
-                          <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
-                          <SelectContent>
-                            {MONTHS.map((month) => (
-                              <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                  {usesReportingPeriod && cadenceConfig && (
+                    <div className="grid gap-3">
+                      {cadenceConfig.allowed.length > 1 && (
+                        <div className="grid gap-1.5">
+                          <Label>Reporting Period *</Label>
+                          <div className="flex gap-2">
+                            {cadenceConfig.allowed.map((option) => (
+                              <button
+                                key={option}
+                                type="button"
+                                onClick={() => setForm((current) => ({ ...current, cadence: option }))}
+                                className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                                  form.cadence === option
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-input bg-transparent text-muted-foreground hover:bg-muted/40"
+                                }`}
+                              >
+                                {option === "WEEKLY" ? "Weekly" : "Monthly"}
+                              </button>
                             ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-1.5">
-                        <Label>Year *</Label>
-                        <Select value={form.year} onValueChange={(value) => setForm((current) => ({ ...current, year: value ?? "" }))}>
-                          <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
-                          <SelectContent>
-                            {YEARS.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {form.cadence === "WEEKLY" && (
+                        <div className="grid gap-1.5">
+                          <Label>Week Of *</Label>
+                          <Input
+                            type="date"
+                            value={form.weekOf}
+                            onChange={(event) => setForm((current) => ({ ...current, weekOf: event.target.value }))}
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            Used to determine the reporting period. Set to the week beginning {new Date(`${startOfWeek(form.weekOf)}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}.
+                          </p>
+                        </div>
+                      )}
+
+                      {form.cadence === "MONTHLY" && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="grid gap-1.5">
+                            <Label>Month *</Label>
+                            <Select value={form.month} onValueChange={(value) => setForm((current) => ({ ...current, month: value ?? "" }))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Month">{form.month ? monthName(form.month) : null}</SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {MONTH_OPTIONS.map((month) => (
+                                  <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <Label>Year *</Label>
+                            <Select value={form.year} onValueChange={(value) => setForm((current) => ({ ...current, year: value ?? "" }))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Year">{form.year || null}</SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {YEARS.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {usesYear && !usesMonthYear && (
+                  {usesYear && (
                     <div className="grid gap-1.5">
                       <Label>Year *</Label>
                       <Select value={form.year} onValueChange={(value) => setForm((current) => ({ ...current, year: value ?? "" }))}>
-                        <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select year">{form.year || null}</SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
                           {YEARS.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}
                         </SelectContent>
@@ -398,23 +553,23 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
                   {usesReference && (
                     <div className="grid gap-1.5">
                       <Label>
-                        {form.category === "Child Files"
+                        {form.complianceCategory === "Child Files"
                           ? "Child Name *"
-                          : form.category === "Staff Files"
+                          : form.complianceCategory === "Staff Files"
                             ? "Staff Name *"
-                            : form.category === "Operations"
+                            : form.workspace === "operations"
                               ? "Short Descriptor *"
-                              : form.category === "Staff Complaints"
+                              : form.complianceCategory === "Staff Complaints"
                                 ? "Complaint Reference (optional)"
                                 : "Incident / Reference *"}
                       </Label>
                       <Input
                         placeholder={
-                          form.category === "Child Files"
+                          form.complianceCategory === "Child Files"
                             ? "e.g. Sofia Rivera"
-                            : form.category === "Staff Files"
+                            : form.complianceCategory === "Staff Files"
                               ? "e.g. Maria Gonzalez"
-                              : form.category === "Operations"
+                              : form.workspace === "operations"
                                 ? "e.g. Kitchen Inventory Review"
                                 : "Short identifying reference"
                         }
@@ -424,7 +579,7 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
                     </div>
                   )}
 
-                  {form.category === "CCIR / Critical Incidents" && (
+                  {form.complianceCategory === "CCIR / Critical Incidents" && (
                     <div className="grid gap-1.5">
                       <Label>Short Incident Description / Reference *</Label>
                       <Input
@@ -468,7 +623,9 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
               <div className="grid gap-1.5">
                 <Label>Record Date</Label>
                 <Input type="date" value={form.date} onChange={(event) => handleDateChange(event.target.value)} />
-                <p className="text-[11px] text-muted-foreground">Recurring month and year controls default from this date.</p>
+                {usesReportingPeriod && (
+                  <p className="text-[11px] text-muted-foreground">Used to determine the reporting period.</p>
+                )}
               </div>
 
               <div className="grid gap-1.5">
@@ -488,19 +645,30 @@ export function UploadModal({ open, onClose, defaultLocationId, defaultWorkspace
                     <Upload className="h-5 w-5 text-primary" />
                   </span>
                   <span className="text-sm text-muted-foreground">Drag &amp; drop or click to select files</span>
-                  <span className="text-xs text-muted-foreground">PDF, JPG, PNG up to 20MB</span>
+                  <span className="text-xs text-muted-foreground">PDF, JPG, PNG up to {MAX_UPLOAD_LABEL}</span>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                     className="sr-only"
-                    onChange={(event) => setForm((current) => ({ ...current, fileName: event.target.files?.[0]?.name ?? "" }))}
+                    onChange={(event) => handleFileChange(event.target.files?.[0])}
                   />
                 </label>
-                {form.fileName && (
+                {form.file && (
                   <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm [animation:page-enter_180ms_ease-out_both]">
-                    <File className="h-4 w-4 text-muted-foreground" />
-                    <span className="min-w-0 break-all text-foreground">{form.fileName}</span>
+                    <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 break-all text-foreground">{form.file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleFileChange(undefined)}
+                      className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                      aria-label="Remove selected file"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
+                )}
+                {form.fileError && (
+                  <p className="text-xs font-medium text-destructive">{form.fileError}</p>
                 )}
               </div>
             </div>

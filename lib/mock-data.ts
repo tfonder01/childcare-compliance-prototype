@@ -16,7 +16,8 @@ import type {
 
 export const COMPLIANCE_CATEGORIES: ComplianceCategory[] = [
   "Licensing",
-  "Health & Safety Drills",
+  "Health & Safety",
+  "Drills",
   "Child Files",
   "Staff Files",
   "Classroom Observations",
@@ -29,6 +30,7 @@ export const OPERATIONS_RECORD_TYPES: OperationsRecordType[] = [
   "Opening Checklist",
   "Closing Checklist",
   "Playground Checklist",
+  "Cleaning Checklist",
   "Other Operations Record",
 ]
 
@@ -153,6 +155,7 @@ export const RECORDS: ComplianceRecord[] = [
     description: "Recurring opening checklist covering facility walk-through, classroom readiness, playground inspection, and required opening documentation.",
     fileNames: ["Opening_Checklist_August_2025.pdf"],
     tags: ["opening checklist", "monthly", "operations"],
+    reportingPeriod: { cadence: "MONTHLY", month: "08", year: "2025" },
   },
   {
     id: "rec17",
@@ -169,6 +172,7 @@ export const RECORDS: ComplianceRecord[] = [
     description: "End-of-day operational checklist covering classroom closeout, alarm procedures, medication storage, and final facility walk-through.",
     fileNames: ["Closing_Checklist_August_2025.pdf"],
     tags: ["closing checklist", "monthly", "operations"],
+    reportingPeriod: { cadence: "MONTHLY", month: "08", year: "2025" },
   },
   {
     id: "rec18",
@@ -187,6 +191,40 @@ export const RECORDS: ComplianceRecord[] = [
     description: "Monthly playground readiness checklist. Follow-up requested for the north gate latch before the next outdoor period.",
     fileNames: ["Playground_Checklist_August_2025.pdf", "North_Gate_Latch.jpg"],
     tags: ["playground", "monthly", "operations"],
+    reportingPeriod: { cadence: "MONTHLY", month: "08", year: "2025" },
+  },
+  {
+    id: "rec20",
+    title: "Cleaning Checklist — Week of August 11, 2025",
+    locationId: "loc2",
+    category: "Operations",
+    workspace: "operations",
+    recordType: "Cleaning Checklist",
+    area: "Kitchen",
+    status: "Reviewed",
+    uploadedBy: "James Okafor",
+    uploadedById: "u3",
+    uploadDate: "2025-08-11",
+    lastUpdated: "2025-08-12",
+    description: "Weekly deep-cleaning checklist covering kitchen, restrooms, and shared classroom surfaces.",
+    fileNames: ["Cleaning_Checklist_Week_Aug11_2025.pdf"],
+    tags: ["cleaning checklist", "weekly", "operations"],
+    reportingPeriod: { cadence: "WEEKLY", weekOf: "2025-08-11" },
+  },
+  {
+    id: "rec21",
+    title: "Health & Safety Inspection — August 2025",
+    locationId: "loc1",
+    category: "Health & Safety",
+    status: "New",
+    uploadedBy: "Rachel Torres",
+    uploadedById: "u2",
+    uploadDate: "2025-08-09",
+    lastUpdated: "2025-08-09",
+    description: "Monthly internal health and safety walk-through covering supervision, sanitation, and hazard checks outside of scheduled drills.",
+    fileNames: ["Health_Safety_Inspection_August_2025.pdf"],
+    tags: ["health & safety", "monthly"],
+    reportingPeriod: { cadence: "MONTHLY", month: "08", year: "2025" },
   },
   {
     id: "rec19",
@@ -220,6 +258,7 @@ export const RECORDS: ComplianceRecord[] = [
     description: "Monthly classroom observation focused on arrival routines, safe sleep documentation, and responsive caregiving. Notes reviewed with the lead teacher.",
     fileNames: ["Infant_Observation_August_2025.pdf", "Infant_Room_August.jpg"],
     tags: ["monthly observation", "infant", "August"],
+    reportingPeriod: { cadence: "MONTHLY", month: "08", year: "2025" },
   },
   {
     id: "rec14",
@@ -236,6 +275,7 @@ export const RECORDS: ComplianceRecord[] = [
     description: "Monthly observation of transitions, supervision, and learning-center setup. Follow-up requested for transition coverage notes.",
     fileNames: ["Toddler_Observation_August_2025.pdf"],
     tags: ["monthly observation", "toddler", "follow-up"],
+    reportingPeriod: { cadence: "MONTHLY", month: "08", year: "2025" },
   },
   {
     id: "rec13",
@@ -252,6 +292,7 @@ export const RECORDS: ComplianceRecord[] = [
     description: "Monthly observation covering classroom organization, active supervision, and lesson-plan alignment.",
     fileNames: ["Preschool_Observation_August_2025.pdf", "Preschool_Centers_August.jpg"],
     tags: ["monthly observation", "preschool", "August"],
+    reportingPeriod: { cadence: "MONTHLY", month: "08", year: "2025" },
   },
   {
     id: "rec1",
@@ -273,7 +314,8 @@ export const RECORDS: ComplianceRecord[] = [
     id: "rec2",
     title: "Fire Drill – July 2025",
     locationId: "loc1",
-    category: "Health & Safety Drills",
+    // Migrated from the retired "Health & Safety Drills" category; this is a drill record.
+    category: "Drills",
     status: "New",
     uploadedBy: "Rachel Torres",
     uploadedById: "u2",
@@ -283,6 +325,7 @@ export const RECORDS: ComplianceRecord[] = [
       "Monthly fire drill conducted at 10:15 AM. All 68 children and 9 staff evacuated within 2 minutes 38 seconds. No issues noted.",
     fileNames: ["Fire_Drill_July2025_LM.pdf", "Fire_Drill_July2025_photo.jpg"],
     tags: ["fire drill", "monthly", "evacuation"],
+    reportingPeriod: { cadence: "MONTHLY", month: "07", year: "2025" },
   },
   {
     id: "rec3",
@@ -350,7 +393,8 @@ export const RECORDS: ComplianceRecord[] = [
     id: "rec7",
     title: "Lockdown Drill – June 2025",
     locationId: "loc2",
-    category: "Health & Safety Drills",
+    // Migrated from the retired "Health & Safety Drills" category; this is a drill record.
+    category: "Drills",
     status: "Reviewed",
     uploadedBy: "James Okafor",
     uploadedById: "u3",
@@ -360,6 +404,7 @@ export const RECORDS: ComplianceRecord[] = [
       "Quarterly lockdown drill completed in coordination with Seminole County Sheriff. All rooms secured within 90 seconds.",
     fileNames: ["Lockdown_Drill_June2025_WP.pdf"],
     tags: ["lockdown", "quarterly", "security"],
+    reportingPeriod: { cadence: "MONTHLY", month: "06", year: "2025" },
   },
   {
     id: "rec8",
@@ -426,7 +471,8 @@ export const RECORDS: ComplianceRecord[] = [
     id: "rec12",
     title: "Tornado Drill – May 2025",
     locationId: "loc1",
-    category: "Health & Safety Drills",
+    // Migrated from the retired "Health & Safety Drills" category; this is a drill record.
+    category: "Drills",
     status: "Archived",
     uploadedBy: "Rachel Torres",
     uploadedById: "u2",
@@ -436,6 +482,7 @@ export const RECORDS: ComplianceRecord[] = [
       "Annual tornado drill completed. All children moved to interior hallways within 85 seconds. Archived after review cycle.",
     fileNames: ["Tornado_Drill_May2025_LM.pdf"],
     tags: ["tornado", "annual", "weather"],
+    reportingPeriod: { cadence: "MONTHLY", month: "05", year: "2025" },
   },
 ]
 

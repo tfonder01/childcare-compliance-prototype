@@ -19,6 +19,7 @@ import { StatusBadge } from "@/components/status-badge"
 import { CategoryBadge } from "@/components/category-badge"
 import { useState, useEffect } from "react"
 import { isOperationsRecord } from "@/lib/record-workspaces"
+import { countOverdueRecurringRecords, DEADLINE_RULES_CONFIRMED } from "@/lib/deadlines"
 
 function StatCard({
   label,
@@ -49,8 +50,32 @@ function StatCard({
   )
 }
 
+/**
+ * Placeholder for metrics that depend on unconfirmed business rules (currently: recurring
+ * submission deadlines). Renders a neutral "not yet configured" state instead of a number,
+ * so production users never mistake a placeholder assumption for an authoritative count.
+ */
+function PendingRulesCard({ label, icon: Icon, href }: { label: string; icon: React.ElementType; href: string }) {
+  return (
+    <Link
+      href={href}
+      className="interactive-card group flex min-h-28 min-w-0 flex-col gap-3 rounded-xl border border-dashed bg-card p-4 sm:min-h-32 sm:p-5"
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-current/10">
+          <Icon className="h-4.5 w-4.5" />
+        </div>
+      </div>
+      <p className="mt-auto text-sm font-medium text-muted-foreground">
+        Pending deadline-rule confirmation
+      </p>
+    </Link>
+  )
+}
+
 export default function DashboardPage() {
-  const { records, activity, role, locations, maintenanceRequests, supplyRequests } = useApp()
+  const { records, activity, role, locations, maintenanceRequests, supplyRequests, isDemoMode } = useApp()
   const [now, setNow] = useState<number | null>(null)
   useEffect(() => { setNow(Date.now()) }, [])
 
@@ -74,7 +99,16 @@ export default function DashboardPage() {
     if (r.status !== "Reviewed") return false
     return r.lastUpdated.startsWith(mostRecentMonth)
   }).length
-  const upcoming = 2 // mock: upcoming items
+  // Derived from real reporting-period data on recurring records (weekly/monthly checklists,
+  // drills, observations) that are past their derived due date and not yet Reviewed. This is
+  // a foundation metric, not a full "expected submissions" schedule — see lib/deadlines.ts.
+  //
+  // IMPORTANT: the due-day/grace-period rules behind this number are placeholders the client
+  // has not yet confirmed (see lib/deadlines.ts). Demo mode may still illustrate it, but
+  // production must not present it as an authoritative count until those rules are
+  // confirmed/configured (DEADLINE_RULES_CONFIRMED).
+  const overdueRecurring = now !== null ? countOverdueRecurringRecords(activeRecords, new Date(now)) : 0
+  const canShowAuthoritativeOverdueMetric = isDemoMode || DEADLINE_RULES_CONFIRMED
 
   const recentUploads = [...records]
     .sort((a, b) => b.uploadDate.localeCompare(a.uploadDate))
@@ -140,13 +174,17 @@ export default function DashboardPage() {
           iconClassName="bg-emerald-50 text-emerald-600"
           href="/records?status=Reviewed"
         />
-        <StatCard
-          label="Upcoming / Overdue"
-          value={upcoming}
-          icon={Clock}
-          iconClassName="bg-red-50 text-red-600"
-          href="/needs-review"
-        />
+        {canShowAuthoritativeOverdueMetric ? (
+          <StatCard
+            label="Overdue Recurring Records"
+            value={overdueRecurring}
+            icon={Clock}
+            iconClassName="bg-red-50 text-red-600"
+            href="/needs-review"
+          />
+        ) : (
+          <PendingRulesCard label="Overdue Recurring Records" icon={Clock} href="/needs-review" />
+        )}
       </div>
 
       <section className="order-2 min-w-0 overflow-hidden rounded-xl border border-violet-200/70 bg-card shadow-sm">
